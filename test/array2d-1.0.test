@@ -1,0 +1,108 @@
+#!/usr/bin/env tclsh
+#-*- mode: tcl; coding: utf-8-unix; fill-column: 80; -*-
+
+puts "\n"
+puts "╔═════════════════════════════╗"
+puts "║ *** TEST array2d-1.0.tm *** ║"
+puts "╚═════════════════════════════╝"
+puts "\n"
+
+
+#------------------------------------------------------------------------------
+# this file to be replaced by your local settings for module libraries
+source ~/Qsync/lib/tcl8.6/debugTool.tcl
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+#  package for testing
+#------------------------------------------------------------------------------
+package require tcltest
+namespace import ::tcltest::*
+if {[llength $argv] > 0} {eval configure $argv}
+configure -verbose pass
+# configure -verbose -line
+# configure -verbose -body
+#--------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# the package to be tested
+package require tab::array2d
+# ------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# `array2d names`
+#------------------------------------------------------------------------------
+
+test names-1: {Retrieve the names of the array} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d names tab} \
+    -result {1,a 1,b 2,a 2,b}
+
+#------------------------------------------------------------------------------
+# `array2d lines names`
+#------------------------------------------------------------------------------
+
+test line.names-1: {Retrieve the names of the lines of the array} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d lines names tab} \
+    -result {1 2}
+
+
+#------------------------------------------------------------------------------
+# `array2d columns names`
+#------------------------------------------------------------------------------
+
+test columns.names-1: {Retrieve the names of the lines of the array} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d columns names tab} \
+    -result {a b}
+
+
+#------------------------------------------------------------------------------
+# `array2d lines length`
+#------------------------------------------------------------------------------
+
+test lines.length-1: {Retrieve the length of the lines of the array} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d columns length tab} \
+    -result {2}
+
+
+#------------------------------------------------------------------------------
+# `array2d 2llist`
+#------------------------------------------------------------------------------
+
+test 2llist-1: {Convert and array2d to list of list} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d 2llist tab} \
+    -result {{1a 1b} {2a 2b}}
+
+
+#------------------------------------------------------------------------------
+# `array2d 2ldict`
+#------------------------------------------------------------------------------
+
+test 2ldict-1: {Convert and array2d to list of dict} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d 2ldict tab} \
+    -result {{a 1a b 1b} {a 2a b 2b}}
+
+
+#------------------------------------------------------------------------------
+# `array2d format`
+#------------------------------------------------------------------------------
+
+test format-1: {format an array2d} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d format tab} \
+    -result " 1a  1b \n 2a  2b \n"
+
+test format-2: {format an array2d} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d format tab -semigraphic} \
+    -result "┌────┬────┐\n│ 1a │ 1b │\n│ 2a │ 2b │\n└────┴────┘\n"
+
+test format-3: {format an array2d} \
+    -setup {set tab(1,a) 1a; set tab(1,b) 1b; set tab(2,a) 2a; set tab(2,b) 2b} \
+    -body {array2d format tab -sep & -eol {\\}} \
+    -result " 1a & 1b  \\\\\n 2a & 2b  \\\\\n"

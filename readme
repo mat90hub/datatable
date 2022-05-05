@@ -1,0 +1,14 @@
+-*- coding: utf-8-unix; mode: text; mode: auto-fill; fill-column: 80; ispell-local-dictionary: "american";-*-
+
+
+This directory contains the Tcl library datatable, which help manipulating and
+formatting data shaped into tables.
+
+More information in doc subdirectory:
+
+| datatable.um.texinfo    | user manual                                    |
+| datatable.um.fr.texinfo | manuel utilisateur                             |
+| datatable.teaser.org    | quick introduction of abilities of the modules |
+| datatable.dg.texinfo    | developer guide                                |
+
+

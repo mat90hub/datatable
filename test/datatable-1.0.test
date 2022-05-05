@@ -1,0 +1,1299 @@
+#!/usr/bin/env tclsh
+#-*- mode: Tcl; coding: utf-8-unix; fill-column: 100; ispell-local-dictionary: "american"; -*-
+
+puts "\n"
+puts "╔═══════════════════════════════╗"
+puts "║ *** TEST datatable-1.0.tm *** ║"
+puts "╚═══════════════════════════════╝"
+puts "\n"
+
+
+#------------------------------------------------------------------------------
+# this file to be replaced by your local settings for module libraries
+source ~/Qsync/lib/tcl8.6/debugTool.tcl
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+#  package for testing
+#------------------------------------------------------------------------------
+package require tcltest
+namespace import ::tcltest::*
+if {[llength $argv] > 0} {eval configure $argv}
+configure -verbose pass
+# configure -verbose -line
+# configure -verbose -body
+#------------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# the package to be tested
+package require tab::datatable 1.0
+#---------------------------------------------------------------------------
+
+
+puts "┌───────────────────────────────────────────────┐"
+puts "│ Test procedures from datatable-1.0-string.tcl │"
+puts "│ Procedures applying to strings.               │"
+puts "└───────────────────────────────────────────────┘"
+puts ""
+
+test Capitalize: {Capitalize a string} -body {capitalize paris} -result Paris
+
+test ymd2dmy: {Reverse a date string Y-M-D -> D/M/Y}\
+    -body {ymd2dmy 2010-10-25}\
+    -result "25/10/2010"
+
+test dmy2ymd: {Reverse a date string D/M/Y -> Y-M-D}\
+    -body {dmy2ymd 25/10/2010}\
+    -result 2010-10-25
+
+
+puts "┌───────────────────────────────────────────────┐"
+puts "│ Test procedures from datatable-1.0-list.tcl   │"
+puts "│ Procedures applying to simple lists.          │"
+puts "└───────────────────────────────────────────────┘"
+puts ""
+
+puts "-----------------------------------------------------------------------"
+puts " misc. list procedure useful at top level"
+puts "-----------------------------------------------------------------------"
+
+test lshift: {Shift first element of a list and suppress it from the list}\
+    -body {set l [list a b c]; puts -nonewline "[lshift l] | $l"}\
+    -output {a | b c}
+
+test rshift:  {Shift last element of a list and suppress it from the list}\
+    -body {set l [list a b c]; puts -nonewline "[rshift l] | $l"}\
+    -output {c | a b}
+
+test reverse:  {Return a list reversed}\
+    -body {reverse [list a b c]}\
+    -result {c b a}
+
+test rangeMax: {Generate a range of integers from 0 to Max-1}\
+    -body {range 5}\
+    -result {0 1 2 3 4}
+
+test rangeMinMax: {Generate a range of integers from Min to Max}\
+    -body {range 2 5}\
+    -result {2 3 4 5}
+
+test rangeMinMaxStep: {Generate a range of integers from Min to Max with step}\
+    -body {range 2 8 2}\
+    -result {2 4 6 8}
+
+test lfilterEven: {Filter a list}\
+    -body {lfilter x [list 1 2 3 4 5 6 7 8] {[expr $x % 2] == 0}}\
+    -result {2 4 6 8}
+
+test lfilterString: {Filter a list}\
+    -body {lfilter x [list 1 2.4 3 NA 5 NA 7 8] {[string is integer $x]}}\
+    -result {1 3 5 7 8}
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable list id2int`: convert list of indexes (can contain all,    "
+puts "  end ...) to exact integers."
+puts "-----------------------------------------------------------------------"
+
+test id2int-0: {Convert id to integer, option all}\
+    -body {datatable list id2int all 6}\
+    -result {0 1 2 3 4 5}
+
+test id2int-1: {Convert id to integer}\
+    -body {datatable list id2int {1 3 end-1 end} 9}\
+    -result {1 3 7 8}
+
+test id2int-2: {Convert id to integer, position calculated from end}\
+    -body {datatable list id2int {1 3 end-1 end} 9 true}\
+    -result {1 3 8 9}
+
+test id2int-3: {Convert id to integer for one position only}\
+    -body {datatable list id2int {1} 9}\
+    -result {1}
+
+# work also with accolade for a singleton
+test id2int-4: {Convert id to integer for one position only}\
+    -body {datatable list id2int 1 9}\
+    -result {1}
+
+test id2int-5: {Convert id to integer for one position only}\
+    -body {datatable list id2int end 9 true}\
+    -result {9}
+
+test id2int-6: {Convert id to integer for one position only}\
+    -body {datatable list id2int end 9}\
+    -result {8}
+
+test id2int-7: {Convert id to integer for one position only}\
+    -body {datatable list id2int end-2 9}\
+    -result {6}
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable list normalize`: normalize a list to a given length"
+puts "-----------------------------------------------------------------------"
+
+test list.normalize-1: {Shorten a too long list}\
+    -body {datatable list normalize {10 violet 45.6 blabla bla} 3}\
+    -result {10 violet 45.6}
+
+test list.normalize-2: {Complete with empties a too Short line}\
+    -body {datatable list normalize {10 violet} 3}\
+    -result {10 violet {}}
+
+test list.normalize-3: {Case of a list already complete}\
+    -body {datatable list normalize {10 violet 45.6} 3}\
+    -result {10 violet 45.6}
+
+test list.normalize-4: {Case of an empty list}\
+    -body {datatable list normalize {} 3}\
+    -result {{} {} {}}
+
+
+puts "┌────────────────────────────────────────────────┐"
+puts "│ Test procedures from datatable-1.0-frame.tcl   │"
+puts "│ Procedures fromatting lines and put frames     │"
+puts "│ arround text.                                  │"
+puts "└────────────────────────────────────────────────┘"
+puts ""
+
+# those are internal procedures no exported, so we need the full path to the module.
+
+puts "-----------------------------------------------------------------------"
+puts " datatable::frame::FMT2DICT : return a dict with detail on fmt string"
+puts "-----------------------------------------------------------------------"
+
+test FMT2DICT-1: {Return description of a formatting string in a dict}\
+    -body {::datatable::frame::FMT2DICT %5.2f}\
+    -result {FMT %5.2f SIG {} LEN 5 DEC 2 TYP f}
+
+test FMT2DICT-2: {Return description of a formatting string in a dict}\
+    -body {::datatable::frame::FMT2DICT %-6s}\
+    -result {FMT %-6s SIG - LEN 6 DEC {} TYP s}
+
+puts "-----------------------------------------------------------------------"
+puts " datatable::frame::FMTLEN : return length wished by fmt string."
+puts "-----------------------------------------------------------------------"
+
+test FMTLEN-1: {Return the length wished by a formatting string}\
+    -body {::datatable::frame::FMTLEN %5.2f}\
+    -result {5}
+
+test FMTLEN-2: {Return the length wished by a formatting string}\
+    -body {::datatable::frame::FMTLEN %-.4f}\
+    -result {6}
+
+test FMTLEN-3: {Return the length wished by a formatting string}\
+    -body {::datatable::frame::FMTLEN %-5s}\
+    -result {5}
+
+test FMTLEN-4: {Return the length wished by a formatting string}\
+    -body {::datatable::frame::FMTLEN %08d}\
+    -result {8}
+
+puts "-----------------------------------------------------------------------"
+puts " datatable::frame::FMT2STR : from numeric fmt string return a string fmt."
+puts "-----------------------------------------------------------------------"
+
+test frame.FMT2STR-1: {Return a formatting for a string of the same length that corresponding numeric format}\
+    -body {::datatable::frame::FMT2STR %5.2f}\
+    -result {%-5s}
+
+test frame.FMT2STR-2: {Return a formatting for a string of the same length that corresponding numeric format}\
+    -body {::datatable::frame::FMT2STR %5.2f -right}\
+    -result {%5s}
+
+puts "------------------------------------------------------------------------------"
+puts " datatable::frame::FMTL2STRL : from numeric fmt list string return a string fmt list."
+puts "------------------------------------------------------------------------------"
+
+test FMTL2STRL-1: {Return a list formatting for a string of the same length that corresponding to a list of numeric formats}\
+    -body {::datatable::frame::FMTL2STRL {%5.2f %3.2f %5s %.4f}}\
+    -result {%-5s %-3s %5s %-4s}
+
+puts "-----------------------------------------------------------------------"
+puts " datatable::frame::STRICTSTRING : replace string with * if too long."
+puts "-----------------------------------------------------------------------"
+
+test STRICTSTRING-1 {Shorten the decimal to fit width}\
+    -body {::datatable::frame::STRICTSTRING %5.2f 45.456}\
+    -result {45.46}
+
+test STRICTSTRING-2 {Replace string by * if too wide}\
+    -body {::datatable::frame::STRICTSTRING %5.2f 545.45}\
+    -result {*****}
+
+test STRICTSTRING-3 {Fill with space on the left if too short}\
+    -body {::datatable::frame::STRICTSTRING %8.2f 4}\
+    -result {    4.00}
+
+test STRICTSTRING-4 {Empties recognized with string format}\
+    -body {::datatable::frame::STRICTSTRING %5s {}}\
+    -result {     }
+
+test STRICTSTRING-5 {Case of on character for one space}\
+    -body {::datatable::frame::STRICTSTRING %1s G}\
+    -result G
+
+test STRICTSTRING-6 {Case of two characters for one space}\
+    -body {::datatable::frame::STRICTSTRING %1s GG}\
+    -result *
+
+puts "-----------------------------------------------------------------------"
+puts " datatable::frame::FIXEDSTRING : cut string if too long."
+puts "-----------------------------------------------------------------------"
+
+test FIXEDSTRING-1 {Shorten the decimal to fit width}\
+    -body {::datatable::frame::FIXEDSTRING %5.2f 45.456}\
+    -result {45.46}
+
+test FIXEDSTRING-2 {Replace string by * if too wide}\
+    -body {::datatable::frame::FIXEDSTRING %5.2f 545.45}\
+    -result {545.➩}
+
+test FIXEDSTRING-3 {Fill with space on the left if too short}\
+    -body {::datatable::frame::FIXEDSTRING %8.2f 4}\
+    -result {    4.00}
+
+test FIXEDSTRING-4 {Empties recognized with string format}\
+    -body {::datatable::frame::FIXEDSTRING %5s {}}\
+    -result {     }
+
+test FIXEDSTRING-5 {Case of on character for one space}\
+    -body {::datatable::frame::FIXEDSTRING %1s G}\
+    -result G
+
+test FIXEDSTRING-6 {Case of two characters for one space}\
+    -body {::datatable::frame::FIXEDSTRING %-1s GA}\
+    -result ➩
+
+test FIXEDSTRING-7 {Case of three characters for one space}\
+    -body {::datatable::frame::FIXEDSTRING %-1s GAB}\
+    -result ➩
+
+test FIXEDSTRING-8 {Case of three characters for two space}\
+    -body {::datatable::frame::FIXEDSTRING %-1s GAB}\
+    -result ➩
+
+test FIXEDSTRING-9 {Case of two characters for two spaces}\
+    -body {::datatable::frame::FIXEDSTRING %-2s GA}\
+    -result GA
+
+test FIXEDSTRING-A {Case of three characters for two space}\
+    -body {::datatable::frame::FIXEDSTRING %-2s GAB}\
+    -result G➩
+
+test FIXEDSTRING-B {Case of four characters for two space}\
+    -body {::datatable::frame::FIXEDSTRING %-2s GABC}\
+    -result G➩
+
+test FIXEDSTRING-C {Case of four characters for three space}\
+    -body {::datatable::frame::FIXEDSTRING %-3s GABC}\
+    -result GA➩
+
+puts "------------------------------------------------------------------------"
+puts " `datatable frame line`: formating a list on a line according to different options."
+puts "------------------------------------------------------------------------"
+
+test frame.line-1: {Format a list into a line}\
+    -setup {
+	set data1 [list 5 parts int2]
+	set fmt {%2d %-5s %-6s}
+    }\
+    -body {datatable frame line $fmt $data1}\
+    -result "  5  parts  int2   \n"
+
+# preparing for csv datatable
+test frame.line-2: {Format a list into a line}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {datatable frame line $fmt $data1 ,}\
+    -result "  5 , parts , int2   \n"
+
+test frame.line-3: {Format a list into a line, format with 0 upfront}\
+    -body {datatable frame line {%03i %-6s %5.2f} {5 parts 34.1} & \\\\\\hline}\
+    -result " 005 & parts  & 34.10  \\\\\\hline\n"
+
+test frame.line-4: {Format a list into a line}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {datatable frame line $fmt $data1 & \\\\}\
+    -result "  5 & parts & int2    \\\\\n"
+
+test frame.line-5: {format only a line}\
+    -body {datatable frame line {%05i %8s %9.2f %05i} {150 taxes 150.4 80} & "\\\\\\hline"}\
+    -result " 00150 &    taxes &    150.40 & 00080  \\\\\\hline\n"
+	
+# with frames
+test frame.line-6: {Format a list into a line}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {datatable frame line $fmt $data1 |}\
+    -result "|  5 | parts | int2   |\n"
+
+test frame.line-7: {Format a list into a line}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {datatable frame line $fmt $data1 │}\
+    -result "│  5 │ parts │ int2   │\n"
+
+
+puts "------------------------------------------------------------------------"
+puts " frames "
+puts "------------------------------------------------------------------------"
+
+test frame.SHAPE {Return a formatted frame line based on input line and model}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {::datatable::frame::SHAPE [datatable frame line $fmt $data1 │] ┌─┬┐}\
+    -result "┌────┬───────┬────────┐\n"
+
+test frame.top: {Return the line to cover a semigraphic datatable}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {datatable frame top [datatable frame line $fmt $data1 │]}\
+    -result "┌────┬───────┬────────┐\n"
+
+test frame.bottom: {Return the line to cover a semigraphic datatable}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {datatable frame bottom [datatable frame line $fmt $data1 │]}\
+    -result "└────┴───────┴────────┘\n"
+
+test frame.dotted: {Return the line to cover a semigraphic datatable}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {datatable frame dotted [datatable frame line $fmt $data1 │]}\
+    -result "├┄┄┄┄┼┄┄┄┄┄┄┄┼┄┄┄┄┄┄┄┄┤\n"
+
+test frame.plain: {Return the line to cover a semigraphic datatable}\
+    -setup {set data1 [list 5 parts int2] ; set fmt {%2d %-5s %-6s}}\
+    -body {datatable frame plain [datatable frame line $fmt $data1 │]}\
+    -result "├────┼───────┼────────┤\n"
+
+# same for thick, double
+
+puts "------------------------------------------------------------------------"
+puts " `datatable frame addHeaders`: adding headers on a formatted table "
+puts "------------------------------------------------------------------------"
+
+
+test frame.addHeaders-1: {return a title block to be added on top of a formatted datatable}\
+    -body {datatable frame addHeaders "┌────┬───────┬────────┐\n│  5 │ parts │ int2   │\n└────┴───────┴────────┘\n" {N name type}}\
+    -result "┌────┬───────┬────────┐\n│ N  │ name  │ type   │\n├────┼───────┼────────┤\n│  5 │ parts │ int2   │\n└────┴───────┴────────┘\n"
+
+test frame.addHeaders-2: {return error message if addheaders applied on csv}\
+    -body {datatable fram addHeader " 3 , GH , HJ\n 4 , TH , KL\n" {A1 A2 A3}}\
+    -returnCodes {error}\
+    -result {datatable frame addHeader works only for semigraphic table}
+
+
+puts "┌────────────────────────────────────────────────────┐"
+puts "│ Test procedures from datatable-1.0-llist.tcl       │"
+puts "│ Procedures applying to list of lists.              │"
+puts "└────────────────────────────────────────────────────┘"
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable isnormalized`: check if a datatable is a correct llists"
+puts "------------------------------------------------------------------------------"
+
+test isnormalized-1: {Check if dataset is a list of lists. A simple list is not a list of lists}\
+    -body {datatable isnormalized [list 1 3 4 6 7]}\
+    -result false
+
+test isnormalized-2: {Check if data is a list of lists. Sublist must be equal length}\
+    -body {datatable isnormalized [list [list 1 2] [list 1 5 6 7] [list 2 5 7 8 4]]}\
+    -result false
+
+test isnormalized-3: {Check if data is a list of lists}\
+    -body {datatable isnormalized [list [list 1 2 4 5] [list 1 5 6 7] [list 2 5 [list 1 4] 8]]}\
+    -result true
+# (the list at the sub-sub-leve are ignored and considered as a single component)
+
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable normalize`: normalize a llist with empties"
+puts "------------------------------------------------------------------------------"
+
+test normalize-1: {Complete the lines if too short compared to the max}\
+    -body {datatable normalize [list [list 1 2] [list 1 2 3] [list 1 2 3 4]]}\
+    -result {{1 2 {} {}} {1 2 3 {}} {1 2 3 4}}
+
+test normalize-2: {Case of a datatable complete, return the datatable itself}\
+    -body {datatable normalize [list [list 1 2 3 4] [list 1 2 3 4] [list 1 2 3 4]]}\
+    -result {{1 2 3 4} {1 2 3 4} {1 2 3 4}}
+
+test normalize-3: {Case of a datatable with empties and to complete}\
+    -body {datatable normalize [list [list 1 {}] [list {} 2 3] [list 1 2 3 4]]}\
+    -result {{1 {} {} {}} {{} 2 3 {}} {1 2 3 4}}
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable transpose`"
+puts "------------------------------------------------------------------------------"
+
+test transpose {Return a transposed datatable}\
+    -body {datatable transpose [list [list A1 A2 A3] [list B1 B2 B3]]}\
+    -result {{A1 B1} {A2 B2} {A3 B3}}
+
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable orient`"
+puts "------------------------------------------------------------------------------"
+
+test orient-1 {Secure orientation of a datatable on the number of lines and return list of lines}\
+    -setup {set data2 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable orient $data2 4 lines tolines}\
+    -result {{5 red down} {2 black up} {8 green up} {5 yellow down}}
+
+test orient-2 {Secure orientation of a datatable on the number of lines and return list of columns}\
+    -setup {set data2 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable orient $data2 4 lines tocolumns}\
+    -result {{5 2 8 5} {red black green yellow} {down up up down}}
+
+test orient-3 {Orient a datatable to secure number of columns and return list of lines}\
+    -setup {set data2 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable orient $data2 3 columns tolines}\
+    -result {{5 red down} {2 black up} {8 green up} {5 yellow down}}
+
+test orient-4 {Orient a datatable to secure number of columns and return list of columns}\
+    -setup {set data2 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable orient $data2 3 columns tocolumns}\
+    -result {{5 2 8 5} {red black green yellow} {down up up down}}
+
+test orient-5 {Orient a datatable to secure number of columns and return list of columns}\
+    -setup {set data2 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable orient $data2 4 columns tocolumns}\
+    -result {{5 red down} {2 black up} {8 green up} {5 yellow down}}
+
+test orient-6 {Orient a datatable to secure number of columns and return list of columns}\
+    -setup {set data2 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable orient $data2 4 columns tolines}\
+    -result {{5 2 8 5} {red black green yellow} {down up up down}}
+
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column count` : count the number of columns"
+puts "------------------------------------------------------------------------------"
+
+test column.count-1.0: {Count the number of columns of a datatable}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column count $data3}\
+    -result 3
+
+test column.count-1.1: {Count the number of columns of a datatable with lines sort of one column}\
+    -setup {set data3 [list [list 5 red] [list 2 black] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column count $data3}\
+    -result 3
+
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column insert` : insert columns"
+puts "------------------------------------------------------------------------------"
+
+test column.insert-0: {Return a datatable with a new colum inserted}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column insert $data3 2 {Paris NewYork Amsterdam Berlin}}\
+    -result {{5 red Paris down} {2 black NewYork up} {8 green Amsterdam up} {5 yellow Berlin down}}
+
+test column.insert-1: {Return a datatable with two columns inserted}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column insert $data3 {2 end} {{Paris NewYork Amsterdam Berlin} {France USA Netherlands Germany}}}\
+    -result {{5 red Paris down France} {2 black NewYork up USA} {8 green Amsterdam up Netherlands} {5 yellow Berlin down Germany}}
+
+test column.insert-2: {Return a datatable with two columns inserted and given as list of lines}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column insert $data3 {2 end} {{Paris France} {NewYork USA} {Amsterdam Netherlands} {Berlin Germany}}}\
+    -result {{5 red Paris down France} {2 black NewYork up USA} {8 green Amsterdam up Netherlands} {5 yellow Berlin down Germany}}
+
+test column.insert-3: {Return a datatable with two columns inserted at the same place}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column insert $data3 {1 1} {{Paris France} {NewYork USA} {Amsterdam Netherlands} {Berlin Germany}}}\
+    -result {{5 Paris France red down} {2 NewYork USA black up} {8 Amsterdam Netherlands green up} {5 Berlin Germany yellow down}}
+
+test column.insert-4: {Return a datatable with two columns inserted at the same place, no accolades}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column insert $data3 {1 1} {Paris France} {NewYork USA} {Amsterdam Netherlands} {Berlin Germany}}\
+    -result {{5 Paris France red down} {2 NewYork USA black up} {8 Amsterdam Netherlands green up} {5 Berlin Germany yellow down}}
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column append`"
+puts "------------------------------------------------------------------------------"
+
+test column.append-1: {Return a datatable with two colums appended : inserted at the end and order respected}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column append $data3 {{Paris France} {NewYork USA} {Amsterdam Netherlands} {Berlin Germany}}}\
+    -result {{5 red down Paris France} {2 black up NewYork USA} {8 green up Amsterdam Netherlands} {5 yellow down Berlin Germany}}
+# add test with no accolade on trailing arguments
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column remove`"
+puts "------------------------------------------------------------------------------"
+
+test column.remove-1: {Return a datatable less one column}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column remove $data3 end}\
+    -result {{5 red} {2 black} {8 green} {5 yellow}}
+
+test column.remove-2: {Return a datatable less two columns}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column remove $data3 {0 end}}\
+    -result {red black green yellow}
+
+test column.remove-3: {Return a datatable less two columns, trailing arg with accolades}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column remove $data3 0 end}\
+    -result {red black green yellow}
+
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column index` : retrieve columns by their index"
+puts "------------------------------------------------------------------------------"
+
+test column.index-1: {retrieve a column by its index}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column index $data3 0}\
+    -result {5 2 8 5}
+
+test column.index-2: {retrieve a column by its named index}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column index $data3 end}\
+    -result {down up up down}
+
+test column.index-3: {retrieve several columns by their index}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column index $data3 end-1 end}\
+    -result {{red down} {black up} {green up} {yellow down}}
+
+test column.index-4: {retrieve several columns by their index with accolades}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column index $data3 {end-1 end}}\
+    -result {{red down} {black up} {green up} {yellow down}}
+
+test column.index-5: {retrieve all columns}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column index $data3 all}\
+    -result {{5 red down} {2 black up} {8 green up} {5 yellow down}}
+
+test column.index-6: {if not index given, retrieve the list of indexes}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column index $data3}\
+    -result {0 1 2}
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column width`: return the width in characters to write a column"
+puts "------------------------------------------------------------------------------"
+test column.width-1: {Calcul the max width of a column of a list}\
+    -body {datatable column width {45 GHD ghtsz 4}}\
+    -result 5
+
+# >>faire un test avec une table à plusieurs colonnes
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column fmt`: return formatting string adapted to a column"
+puts "------------------------------------------------------------------------------"
+
+test column.fmt-1: {Return the default formatting string for a column of doubles}\
+    -body {datatable column fmt [::list 2.3 4.56 56 .456]}\
+    -result {%6.3f}
+
+test column.fmt-2: {Return the default formatting string for a column of doubles < 1}\
+    -body {datatable column fmt [list .34 .45 .556 .34]}\
+    -result %4.3f
+
+test column.fmt-3: {Return the default formatting string for a column of integers}\
+    -body {datatable column fmt [list 2 33 456 56 0]}\
+    -result {%3d}
+
+test column.fmt-4: {Return the default formatting string for a column of string}\
+    -body {datatable column fmt [list 2 3.3 NA 56.04 0]}\
+    -result {%-5s}
+
+test column.fmt-5: {Return the default formatting string for a column of doubles with exceptions}\
+    -body {datatable column fmt [list 2.3 4.56 56 NA .345] {NA}}\
+    -result {%6.3f}
+
+test column.fmt-6: {Return the default formatting string for a column of doubles with exceptions}\
+    -body {datatable column fmt [list 2.3 4.56 56 NA .345] NA}\
+    -result {%6.3f}
+
+test column.fmt-7: {Return the default formatting string for a column of doubles with exceptions}\
+    -body {datatable column fmt [list 2.34 NA 45 na 56 .34] {NA na}}\
+    -result {%5.2f}
+
+test column.fmt-8: {Return the default formatting string for a column of doubles with exceptions}\
+    -body {datatable column fmt [list 2.34 NA 45 na 56 .34] NA na}\
+    -result {%5.2f}
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column overwrite`"
+puts "------------------------------------------------------------------------------"
+
+test column.overwrite-1: {return a datatable in which a column is overwritten}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column overwrite $data3 end {firstFloor secondFloor underground basement}}\
+    -result {{5 red firstFloor} {2 black secondFloor} {8 green underground} {5 yellow basement}}
+
+test column.overwrite-2: {return a datatable in which columns are overwritten}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column overwrite $data3 {1 2} {{firstFloor secondFloor underground basement} {flat house flat house}}}\
+    -result {{5 firstFloor flat} {2 secondFloor house} {8 underground flat} {5 basement house}}
+	
+test column.overwrite-3: {return a datatable in which columns are overwritten with index names}\
+    -setup {set data3 [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable column overwrite $data3 {end-1 end} {{firstFloor secondFloor underground basement} {flat house flat house}}}\
+    -result {{5 firstFloor flat} {2 secondFloor house} {8 underground flat} {5 basement house}}
+
+# >> add cases for which one try to overwrite non existing columns (-> error handling)
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable column cumulated`: return cumulated columns"
+puts "------------------------------------------------------------------------------"
+
+test column.cumul-1: {return a column with cumulative sum}\
+    -setup {set data4 [list {5 red down 150} {2 black up 200} {8 green up 50} {5 yellow down 70}]}\
+    -body {datatable column cumul $data4 end}\
+    -result {150 350 400 470}
+
+test column.cumul-2: {return two column with cumulative sum}\
+    -setup {set data4 [list {5 red down 150} {2 black up 200} {8 green up 50} {5 yellow down 70}]}\
+    -body {datatable column cumul $data4 {0 end}}\
+    -result {{5 150} {7 350} {15 400} {20 470}}
+
+# for trailing arguments, works also with no accolades
+test column.cumul-3: {return with column with cumulative sum, no accolades}\
+    -setup {set data4 [list {5 red down 150} {2 black up 200} {8 green up 50} {5 yellow down 70}]}\
+    -body {datatable column cumul $data4 0 end}\
+    -result {{5 150} {7 350} {15 400} {20 470}}
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable widths`: return width of columns"
+puts "------------------------------------------------------------------------------"
+
+test widths-1: {Calcul the width of a columns, one index given}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable widths $data 2}\
+    -result 4
+
+test widths-2: {Calcul the width of a columns, two index given without accolades}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable widths $data 1 2}\
+    -result {6 4}
+
+test widths-3: {Calcul the width of a columns, two index given with accolades}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable widths $data {1 2}}\
+    -result {6 4}
+
+test widths-4: {Calcul the width of a columns, no index means all columns}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable widths $data}\
+    -result {1 6 4}
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable fmt`: propose a format list for a dataset"
+puts "------------------------------------------------------------------------------"
+
+test fmt-1: {Return a list of formatting string for each column}\
+    -setup {set data [list {5 red 150.45} {2 black 200.33} {8 green 50.3} {5 yellow 70}]}\
+    -body {datatable fmt $data}\
+    -result {%1d %-6s %6.2f}
+
+test fmt-2: {Return a formatting string for a given column}\
+    -setup {set data [list {5 red 150.45} {2 black 200.33} {8 green 50.3} {5 yellow 70}]}\
+    -body {datatable fmt $data end}\
+    -result {%6.2f}
+
+test fmt-3: {Return a formatting string for several columns}\
+    -setup {set data [list {5 red 150.45} {2 black 200.33} {8 green 50.3} {5 yellow 70}]}\
+    -body {datatable fmt $data end-1 end}\
+    -result {%-6s %6.2f}
+
+test fmt-4: {Return a formatting string for several columns, with accolades}\
+    -setup {set data [list {5 red 150.45} {2 black 200.33} {8 green 50.3} {5 yellow 70}]}\
+    -body {datatable fmt $data {end-1 end}}\
+    -result {%-6s %6.2f}
+
+test fmt-5: {Return a formatting string for several columns, no index means all columns}\
+    -setup {set data [list {5 red 150.45} {2 black 200.33} {8 green 50.3} {5 yellow 70}]}\
+    -body {datatable fmt $data}\
+    -result {%1d %-6s %6.2f}
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable line count`"
+puts "------------------------------------------------------------------------------"
+
+test line.count: {Count the number of lines of a datatable}\
+    -setup {set data5 [list {5 red 150.45} {2 black 200.33} {8 green 50.3} {5 yellow 70}]}\
+    -body {datatable line count $data5}\
+    -result 4
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable line insert`"
+puts "------------------------------------------------------------------------------"
+
+test line.insert-1: {return a datatable with a new line inserted}\
+    -setup {set data6 [list [list A1 A2 A3] [list B1 B2 B3]]}\
+    -body {datatable line insert $data6 1 [list C1 C2 C3]}\
+    -result {{A1 A2 A3} {C1 C2 C3} {B1 B2 B3}}
+
+test line.insert-2: {return a datatable with several lines inserted}\
+    -setup {set data6 [list [list A1 A2 A3] [list B1 B2 B3]]}\
+    -body {datatable line insert $data6 {0 end} [list [list C1 C2 C3] [list D1 D2 D3]]}\
+    -result {{C1 C2 C3} {A1 A2 A3} {B1 B2 B3} {D1 D2 D3}}
+
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable line append`"
+puts "------------------------------------------------------------------------------"
+
+test line.append-1: {return a datatable with a new line appended}\
+    -setup {set data6 [list [list A1 A2 A3] [list B1 B2 B3]]}\
+    -body {datatable line append $data6 [list C1 C2 C3]}\
+    -result {{A1 A2 A3} {B1 B2 B3} {C1 C2 C3}}
+
+test line.append-2: {return a datatable with several lines inserted}\
+    -setup {set data6 [list [list A1 A2 A3] [list B1 B2 B3]]}\
+    -body {datatable line append $data6 [list [list C1 C2 C3] [list D1 D2 D3]]}\
+    -result {{A1 A2 A3} {B1 B2 B3} {C1 C2 C3} {D1 D2 D3}}
+
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable line remove`"
+puts "------------------------------------------------------------------------------"
+
+test line.remove-1: {Return a datatable less one line}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line remove $data3 end}\
+    -result {{5 red down} {2 black up} {8 green up}}
+
+test line.remove-2: {Return a datatable less two lines}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line remove $data3 {0 end}}\
+    -result {{2 black up} {8 green up}}
+
+test line.remove-2: {Return a datatable less two lines, trailing arg with accolades}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line remove $data3 0 end}\
+    -result {{2 black up} {8 green up}}
+
+
+puts "------------------------------------------------------------------------------"
+puts " `datatable line index`: retrieve lines by their index"
+puts "------------------------------------------------------------------------------"
+
+test line.index-1: {retrieve a line by its index}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line index $data3 0}\
+    -result {5 red down}
+
+test line.index-2: {retrieve a line by its named index}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line index $data3 end}\
+    -result {5 yellow down}
+
+test line.index-3: {retrieve several lines by their index}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line index $data3 end-1 end}\
+    -result {{8 green up} {5 yellow down}}
+
+test line.index-4: {retrieve several lines by their index with accolades}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line index $data3 {end-1 end}}\
+    -result {{8 green up} {5 yellow down}}
+
+test line.index-5: {retrieve all lines}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line index $data3 all}\
+    -result {{5 red down} {2 black up} {8 green up} {5 yellow down}}
+
+test line.index-6: {if not index given, retrieve the list of indexes}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line index $data3}\
+    -result {0 1 2 3}
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable line overwrite`"
+puts "-----------------------------------------------------------------------"
+
+test line.overwrite-1: {return a datatable in which a line is overwritten}\
+    -setup {set data [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line overwrite $data end {10 brown right}}\
+    -result {{5 red down} {2 black up} {8 green up} {10 brown right}}
+
+test line.overwrite-2: {return a datatable in which lines are overwritten}\
+    -setup {set data [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line overwrite $data {1 2} {{10 brown right} {11 red left}}}\
+    -result {{5 red down} {10 brown right} {11 red left} {5 yellow down}}
+	
+test line.overwrite-3: {return a datatable in which lines are overwritten with index names}\
+    -setup {set data [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line overwrite $data {end-1 end} {{10 brown right} {11 red left}}}\
+    -result {{5 red down} {2 black up} {10 brown right} {11 red left}}
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable line sort`: sort lines (indeed only the lsort command)"
+puts "-----------------------------------------------------------------------"
+
+test line.sort-1: {sort the line with a given index}\
+    -setup {set data3 [list {5 red down} {2 black up} {8 green up} {5 yellow down}]}\
+    -body {datatable line sort -index 0 $data3}\
+    -result {{2 black up} {5 red down} {5 yellow down} {8 green up}}
+
+puts "-----------------------------------------------------------------------"
+puts " Sort with simple lsort..."
+puts "-----------------------------------------------------------------------"
+
+test lsort-1: {Sort the lines of a datatable according the first attribute}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {lsort $data}\
+    -result {{2 black up} {5 red down} {5 yellow down} {8 green up}}
+
+test lsort-2: {Sort the lines of a datatable according to a given attribute}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {lsort -index 1 $data}\
+    -result {{2 black up} {8 green up} {5 red down} {5 yellow down}}
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable line fmt`"
+puts "-----------------------------------------------------------------------"
+
+test line.fmt-1: {Propose a list of formatting strings}\
+    -setup {set data [list 01 description 450.45]}\
+    -body {datatable line fmt $data}\
+    -result {%2s %-11s %6.2f}
+
+test line.fmt-2: {Propose a list of formatting strings, with an empty}\
+    -setup {set data [list 01 description {} 450.45]}\
+    -body {datatable line fmt $data}\
+    -result {%2s %-11s %1s %6.2f}
+
+
+puts "┌───────────────────────────────────────────────────┐"
+puts "│ Test of procedures from datatable-1.0.tm          │"
+puts "│ (conversion of of llist to other structures)      │"
+puts "└───────────────────────────────────────────────────┘"
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable to ldict` : convert llist to ldict"
+puts "-----------------------------------------------------------------------"
+
+test to.ldict-1: {convert llist to ldict}\
+    -setup {set data [list {5 red down} {2 black up} {8 green up} {5 yellow down}] ;\
+		set headers [list N° Color Where]}\
+    -body {datatable to ldict $data $headers}\
+    -result {{N° 5 Color red Where down} {N° 2 Color black Where up} {N° 8 Color green Where up} {N° 5 Color yellow Where down}}
+
+# >> do some other tests
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable to dcol` : convert llist to dcol"
+puts "-----------------------------------------------------------------------"
+
+test to.dcol-1: {transfer to dcol}\
+    -setup {set data [list {5 red down} {2 black up} {8 green up} {5 yellow down}] ;\
+		set headers [list N° Color Where]}\
+    -body {datatable to dcol $data $headers}\
+    -result {N° {5 2 8 5} Color {red black green yellow} Where {down up up down}}
+
+# >> do some other tests
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable from ldict` : retrieve from ldict into llist"
+puts "-----------------------------------------------------------------------"
+
+test from.ldict-1: {retrieve from ldict}\
+    -setup {set data [list {N° 5 Color red Where down} {N° 2 Color black Where up} {N° 8 Color green Where up} {N° 5 Color yellow Where down}]}\
+    -body {datatable from ldict $data}\
+    -result {{5 red down} {2 black up} {8 green up} {5 yellow down}}
+
+
+test from.ldict-2: {retrieve from ldict, some fields may be missing}\
+    -setup {set data [list {N° 3 Color red Where down} {N° 2 Where up} {N° 8 } {N° 5 Color yellow Where down}]}\
+    -body {datatable from ldict $data}\
+    -result {{3 red down} {2 {} up} {8 {} {}} {5 yellow down}}
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable from dcol`: retrieve from dcol into llist"
+puts "-----------------------------------------------------------------------"
+
+test from.dcol-1: {Retrieve from dcol}\
+    -setup {set data [dict create N° {5 2 8 5} Color {red black green yellow} Where {down up up down}]}\
+    -body {datatable from dcol $data}\
+    -result {{5 red down} {2 black up} {8 green up} {5 yellow down}}
+
+
+puts "┌───────────────────────────────────────────────────┐"
+puts "│ Test of procedures from datatable-1.0-ldict.tcl   │"
+puts "│ Procedures handling ldict                         │"
+puts "└───────────────────────────────────────────────────┘"
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable ldict check`"
+puts "-----------------------------------------------------------------------"
+
+test ldict.check-1: {Check a ldict}\
+    -setup {set data [list {N° 5 Color red Where down} {N° 2 Color black Where up} {N° 8 Color green Where up} {N° 5 Color yellow Where down}]}\
+    -body {datatable ldict check $data}\
+    -result true
+
+test ldict.check-2: {Check a ldict, one dictionary is wrong}\
+    -setup {set data [list {N° 5 Color red Where} {N° 2 Color black Where up} {N° 8 Color green Where up} {N° 5 Color yellow Where down}]}\
+    -body {datatable ldict check $data}\
+    -result false
+
+test ldict.check-3: {Check a ldict, dictionaries may be of different size}\
+    -setup {set data [list {N° 5 Color red Where down} {N° 2 Where up} {N° 8 } {N° 5 Color yellow Where down}]}\
+    -body {datatable ldict check $data}\
+    -result true
+
+puts "------------------------------------------------------------------------"
+puts " `datatable ldict to dcol`: convert a ldict to dcol"
+puts "------------------------------------------------------------------------"
+
+test ldict.to.dcol-1: {Convert ldict to dcol}\
+    -setup {set data [list {N° 5 Color red Where down}\
+			  {N° 2 Color black Where up}\
+			  {N° 8 Color green Where up}\
+			  {N° 5 Color yellow Where down}]}\
+    -body {datatable ldict to dcol $data}\
+    -result {N° {5 2 8 5} Color {red black green yellow} Where {down up up down}}
+    
+test ldict.to.dcol-2: {Convert ldict to dcol, dict of different size}\
+    -setup {set data [list {N° 3 Color red Where down} {N° 2 Where up} {N° 8 } {N° 5 Color yellow Where down}]}\
+    -body {datatable ldict to dcol $data}\
+    -result {N° {3 2 8 5} Color {red {} {} yellow} Where {down up {} down}}
+
+test ldict.to.dcol-3: {Convert ldict to dcol with one line only (double accolade required)}\
+    -setup {set data {{code 131 description {Association avance permanente} montant_precedant {    11 500,00 €}}}}\
+    -body {datatable ldict to dcol $data}\
+    -result {code 131 description {{Association avance permanente}} montant_precedant {{    11 500,00 €}}}
+
+puts "------------------------------------------------------------------------"
+puts " `datatable ldict headers list`: retrieve list of headers"
+puts "------------------------------------------------------------------------"
+
+test ldict.headers.list-1: {Retrieve the list of headers, dictionaries may be of different size}\
+    -setup {set data [list {N° 3 Color red Where down} {N° 2 Where up} {N° 8 } {N° 5 Color yellow Where down}]}\
+    -body {datatable ldict headers list $data}\
+    -result {N° Color Where}
+
+
+test ldict.headers.list-2: {Retrieve list of header with a ldict reduced to one line (double accolades required)}\
+    -setup {set data {{code 131 description {Association avance permanente} montant_precedant {    11 500,00 €}}}}\
+    -body {datatable ldict headers list $data}\
+    -result {code description montant_precedant}
+
+
+puts "------------------------------------------------------------------------"
+puts " `datatable ldict headers overwrite`: return a ldict in which we overwrite "
+puts  "  the headers giving a map of change to be done"
+puts "------------------------------------------------------------------------"
+
+test ldict.headers.overwrite-1: {Overwrite headers}\
+    -setup {set data [list {N° 3 Color red Where down} {N° 2 Where up} {N° 8 } {N° 5 Color yellow Where down}] ;\
+		set newHdr [dict create N° N° Color Couleur Where où]}\
+    -body {datatable ldict headers overwrite $data $newHdr}\
+    -result {{N° 3 Couleur red où down} {N° 2 Couleur {} où up} {N° 8 Couleur {} où {}} {N° 5 Couleur yellow où down}}
+
+
+puts "------------------------------------------------------------------------"
+puts " `datatable ldict column get`"
+puts "------------------------------------------------------------------------"
+
+test ldict.column.get-1: {Return the columns given by its key}\
+    -setup {set data [list {N° 3 Color red Where down} {N° 2 Where up} {N° 8 } {N° 5 Color yellow Where down}]}\
+    -body {datatable ldict column get $data N°}\
+    -result {3 2 8 5}
+
+test ldict.column.get-2: {Return the columns given by their keys}\
+    -setup {set data [list {N° 3 Color red Where down} {N° 2 Where up} {N° 8 } {N° 5 Color yellow Where down}]}\
+    -body {datatable ldict column get $data N° Color}\
+    -result {N° {3 2 8 5} Color {red {} {} yellow}}
+
+
+puts "┌───────────────────────────────────────────────────┐"
+puts "│ Test of procedures from datatable-1.0-dcol.tcl    │"
+puts "│ Procedures handling dcol                          │"
+puts "└───────────────────────────────────────────────────┘"
+
+puts "------------------------------------------------------------------------"
+puts " `datatable dcol to ldict`"
+puts "------------------------------------------------------------------------"
+
+test dcol.to.ldict-1: {Converting a dcol to a ldict}\
+    -setup {set data [dict create N° {3 2 8 5} Color {red {} {} yellow} Where {down up {} down}]}\
+    -body {datatable dcol to ldict $data}\
+    -result {{N° 3 Color red Where down} {N° 2 Color {} Where up} {N° 8 Color {} Where {}} {N° 5 Color yellow Where down}}
+
+# other tests ?
+
+puts "------------------------------------------------------------------------"
+puts " `datatable dcol headers list`"
+puts "------------------------------------------------------------------------"
+
+test dcol.headers.list-1: {Listing the headars of a dcol}\
+    -setup {set data [dict create N° {3 2 8 5} Color {red {} {} yellow} Where {down up {} down}]}\
+    -body {datatable dcol headers list $data}\
+    -result {N° Color Where}
+
+
+puts "┌───────────────────────────────────────────────────┐"
+puts "│ Test of procedures from datatable-1.0-format.tcl  │"
+puts "│ All formatting procedures                         │"
+puts "└───────────────────────────────────────────────────┘"
+
+
+puts "------------------------------------------------------------------------"
+puts " `datatable format`: return a formatted datatable"
+puts "------------------------------------------------------------------------"
+
+test format-0.01: {Format a datatable, case empty ""}\
+    -setup {set data ""}\
+    -body  {datatable format $data}\
+    -result ""
+
+test format-0.02: {Format a datatable, case empty {}}\
+    -setup {set data {}}\
+    -body  {datatable format $data}\
+    -result ""
+
+test format-1.01: {Format a datatable for nice output}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format $data}\
+    -result " 5  red     down \n 2  black   up   \n 8  green   up   \n 5  yellow  down \n"
+
+test format-1.02: {Format a datatable for nice output, option -data}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -data $data}\
+    -result " 5  red     down \n 2  black   up   \n 8  green   up   \n 5  yellow  down \n"
+
+test format-1.03: {Format a datatable for nice output, option --}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -data $data}\
+    -result " 5  red     down \n 2  black   up   \n 8  green   up   \n 5  yellow  down \n"
+
+test format-2.01: {Format a datatable for csv}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -sep , $data}\
+    -result " 5 , red    , down \n 2 , black  , up   \n 8 , green  , up   \n 5 , yellow , down \n"
+
+test format-2.02: {Format a datatable for csv, option -data}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -data $data -sep ,}\
+    -result " 5 , red    , down \n 2 , black  , up   \n 8 , green  , up   \n 5 , yellow , down \n"
+
+test format-2.03: {Format a datatable for csv, option --}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -sep , -- $data}\
+    -result " 5 , red    , down \n 2 , black  , up   \n 8 , green  , up   \n 5 , yellow , down \n"
+
+test format-3.01: {Format a datatable for LaTeX}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -sep & -eol \\\\ $data}\
+    -result " 5 & red    & down  \\\\\n 2 & black  & up    \\\\\n 8 & green  & up    \\\\\n 5 & yellow & down  \\\\\n"
+
+test format-3.02: {Format a datatable for LaTeX, option -data}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -sep & -data $data -eol \\\\}\
+    -result " 5 & red    & down  \\\\\n 2 & black  & up    \\\\\n 8 & green  & up    \\\\\n 5 & yellow & down  \\\\\n"
+
+test format-3.03: {Format a datatable for LaTeX, option --}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -sep & -eol \\\\ -- $data}\
+    -result " 5 & red    & down  \\\\\n 2 & black  & up    \\\\\n 8 & green  & up    \\\\\n 5 & yellow & down  \\\\\n"
+
+test format-4.01: {Format a datatable in semigraphic}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -semigraphic $data}\
+    -result "┌───┬────────┬──────┐\n│ 5 │ red    │ down │\n│ 2 │ black  │ up   │\n│ 8 │ green  │ up   │\n│ 5 │ yellow │ down │\n└───┴────────┴──────┘\n"
+
+test format-4.02: {Format a datatable in semigraphic, option -data}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -data $data -semigraphic }\
+    -result "┌───┬────────┬──────┐\n│ 5 │ red    │ down │\n│ 2 │ black  │ up   │\n│ 8 │ green  │ up   │\n│ 5 │ yellow │ down │\n└───┴────────┴──────┘\n"
+
+test format-4.03: {Format a datatable in semigraphic, otion --}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body  {datatable format -semigraphic -- $data}\
+    -result "┌───┬────────┬──────┐\n│ 5 │ red    │ down │\n│ 2 │ black  │ up   │\n│ 8 │ green  │ up   │\n│ 5 │ yellow │ down │\n└───┴────────┴──────┘\n"
+
+test format-5.01: {Format with fmt}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable format -data $data -fmt {%3s %-8s %-6s}}\
+    -result "   5  red       down   \n   2  black     up     \n   8  green     up     \n   5  yellow    down   \n"
+
+test format-5.02: {Format with fmt}\
+    -setup {set data [list [list 5 red down] [list 2 black up] [list 8 green up] [list 5 yellow down]]}\
+    -body {datatable format -data $data -fmt {%3s %-8s %-6s} -sep & -eol \\\\}\
+    -result "   5 & red      & down    \\\\\n   2 & black    & up      \\\\\n   8 & green    & up      \\\\\n   5 & yellow   & down    \\\\\n"
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable line format`: format a line "
+puts "-----------------------------------------------------------------------"
+
+test list.format-1.01: {Format list, default format}\
+    -setup {set data [list 5 red 45.670]}\
+    -body {datatable line format $data}\
+    -result " 5  red  45.670 \n"
+
+test list.format-1.02: {Format list, using option -data}\
+    -setup {set data [list 5 red 45.670]}\
+    -body {datatable line format -data $data}\
+    -result " 5  red  45.670 \n"
+
+test list.format-1.03: {Format list, using option --}\
+    -setup {set data [list 5 red 45.670]}\
+    -body {datatable line format -- $data}\
+    -result " 5  red  45.670 \n"
+
+
+test list.format-2.01: {Format list, in semigraphic}\
+    -setup {set data [list 5 red 45.670]}\
+    -body {datatable line format -semigraphic $data }\
+    -result "┌───┬─────┬────────┐\n│ 5 │ red │ 45.670 │\n└───┴─────┴────────┘\n"
+
+
+test list.format-3.01: {Format list, targeting LaTeX table}\
+    -setup {set data [list 5 red 45.670]}\
+    -body {datatable line format -fmt {%3s %-8s %-6s} -sep & -eol \\\\ $data}\
+    -result "   5 & red      & 45.670  \\\\\n"
+
+
+test list.format-3.02: {Format list, targeting LaTeX table and option -data}\
+    -setup {set data [list 5 red 45.670]}\
+    -body {datatable line format -data $data -fmt {%3s %-8s %-6s} -sep & -eol \\\\}\
+    -result "   5 & red      & 45.670  \\\\\n"
+
+
+test list.format-3.03: {Format list, targeting LaTeX table and option --}\
+    -setup {set data [list 5 red 45.670]}\
+    -body {datatable line format -fmt {%3s %-8s %-6s} -sep & -eol \\\\ -- $data}\
+    -result "   5 & red      & 45.670  \\\\\n"
+
+
+test list.format-4: {Format list, in semigraphic with formatting string}\
+    -setup {set data [list 5 red 45.670]}\
+    -body {datatable line format -fmt {%1d %-6s %5.2f} -semigraphic $data }\
+    -result "┌───┬────────┬───────┐\n│ 5 │ red    │ 45.67 │\n└───┴────────┴───────┘\n"
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable ldict format`"
+puts "-----------------------------------------------------------------------"
+
+test ldict.format-1: {Format a ldict for nice output}\
+    -setup {set data [list [dict create N° 1 descr "current account" period 456.56]\
+			  [dict create N° 2 descr "saving account" period 78.6]\
+			  [dict create N° 3 descr "expense" period 56]]}\
+    -body {datatable ldict format $data}\
+    -result " N°  descr  period \n 1  current account  456.56 \n 2  saving account    78.60 \n 3  expense           56.00 \n"
+
+
+test ldict.format-2: {Format a ldict for nice output}\
+    -setup {set data [list [dict create N° 1 descr "current account" period 456.56]\
+			  [dict create N° 2 descr "saving account" period 78.6]\
+			  [dict create N° 3 descr "expense" period 56]]}\
+    -body {datatable ldict format -nohead $data}\
+    -result " 1  current account  456.56 \n 2  saving account    78.60 \n 3  expense           56.00 \n"
+
+
+test ldict.format-3: {Format a ldict for nice output}\
+    -setup {set data [list [dict create N° 1 descr "current account" period 456.56]\
+			  [dict create N° 2 descr "saving account" period 78.6]\
+			  [dict create N° 3 descr "expense" period 56]]}\
+    -body {datatable ldict format -fmt {%3s %-8s %-6s} -data $data -sep & -eol \\\\}\
+    -result "  N° & descr    & period  \\\\\n   1 & current➩ & 456.56  \\\\\n   2 & saving ➩ & 78.6    \\\\\n   3 & expense  & 56      \\\\\n"
+
+
+test ldict.format-4: {Format a ldict for nice output}\
+    -setup {set data [list [dict create N° 1 descr "current account" period 456.56]\
+			  [dict create N° 2 descr "saving account" period 78.6]\
+			  [dict create N° 3 descr "expense" period 56]]}\
+    -body {datatable ldict format -semigraphic -- $data }\
+    -result "┌───┬─────────────────┬────────┐\n│ ➩ │ descr           │ period │\n├───┼─────────────────┼────────┤\n│ 1 │ current account │ 456.56 │\n│ 2 │ saving account  │  78.60 │\n│ 3 │ expense         │  56.00 │\n└───┴─────────────────┴────────┘\n"
+
+
+test ldict.format-5: {Format a ldict for nice output}\
+    -setup {set data [list [dict create N° 1 descr "current account" period 456.56]\
+			  [dict create N° 2 descr "saving account" period 78.6]\
+			  [dict create N° 3 descr "expense" period 56]]}\
+    -body {datatable ldict format -data $data -semigraphic -nohead}\
+    -result "┌───┬─────────────────┬────────┐\n│ 1 │ current account │ 456.56 │\n│ 2 │ saving account  │  78.60 │\n│ 3 │ expense         │  56.00 │\n└───┴─────────────────┴────────┘\n"
+
+
+test ldict.format-6: {Format a ldict for nice output}\
+    -setup {set data [list [dict create N° 1 descr "current account" period 456.56]\
+			  [dict create N° 2 descr "saving account" period 78.6]\
+			  [dict create N° 3 descr "expense" period 56]]}\
+    -body {datatable ldict format -semigraphic -nohead -fmt {%3s %-8s %-6s} -data $data }\
+    -result "┌─────┬──────────┬────────┐\n│   1 │ current➩ │ 456.56 │\n│   2 │ saving ➩ │ 78.6   │\n│   3 │ expense  │ 56     │\n└─────┴──────────┴────────┘\n"
+
+
+test ldict.format-7: {Format a ldict for nice output}\
+    -setup {set data [list [dict create N° 1 descr "current account" period 456.56]\
+			  [dict create N° 2 descr "saving account" period 78.6]\
+			  [dict create N° 3 descr "expense" period 56]]}\
+    -body {datatable ldict format -semigraphic -fmt {%3s %-8s %-6s} $data }\
+    -result "┌─────┬──────────┬────────┐\n│ N°  │ descr    │ period │\n├─────┼──────────┼────────┤\n│   1 │ current➩ │ 456.56 │\n│   2 │ saving ➩ │ 78.6   │\n│   3 │ expense  │ 56     │\n└─────┴──────────┴────────┘\n"
+
+
+puts "-----------------------------------------------------------------------"
+puts " `datatable dcol format`"
+puts "-----------------------------------------------------------------------"
+
+test dcol.format-1.01: {Format a dcol for nice output}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format $data}\
+    -result " N°  descr  period \n 1  current account  456.56 \n 2  saving account    78.60 \n 3  expense           56.00 \n"
+
+test dcol.format-1.02: {Format a dcol for nice output, option -data}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -data $data}\
+    -result " N°  descr  period \n 1  current account  456.56 \n 2  saving account    78.60 \n 3  expense           56.00 \n"
+
+test dcol.format-1.03: {Format a dcol for nice output, option --}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -- $data}\
+    -result " N°  descr  period \n 1  current account  456.56 \n 2  saving account    78.60 \n 3  expense           56.00 \n"
+
+
+test dcol.format-2.01: {Format a dcol for nice output}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -fmt {%3s %-8s %-6s} -sep & -eol \\\\ $data}\
+    -result "  N° & descr    & period  \\\\\n   1 & current➩ & 456.56  \\\\\n   2 & saving ➩ & 78.6    \\\\\n   3 & expense  & 56      \\\\\n"
+
+test dcol.format-2.02: {Format a dcol for nice output, option -data}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -data $data -fmt {%3s %-8s %-6s} -sep & -eol \\\\}\
+    -result "  N° & descr    & period  \\\\\n   1 & current➩ & 456.56  \\\\\n   2 & saving ➩ & 78.6    \\\\\n   3 & expense  & 56      \\\\\n"
+
+test dcol.format-2.03: {Format a dcol for nice output, option -data}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -fmt {%3s %-8s %-6s} -sep & -eol \\\\ -- $data}\
+    -result "  N° & descr    & period  \\\\\n   1 & current➩ & 456.56  \\\\\n   2 & saving ➩ & 78.6    \\\\\n   3 & expense  & 56      \\\\\n"
+
+
+test dcol.format-3: {Format a dcol for nice output}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -semigraphic $data}\
+    -result "┌───┬─────────────────┬────────┐\n│ ➩ │ descr           │ period │\n├───┼─────────────────┼────────┤\n│ 1 │ current account │ 456.56 │\n│ 2 │ saving account  │  78.60 │\n│ 3 │ expense         │  56.00 │\n└───┴─────────────────┴────────┘\n"
+
+
+test dcol.format-4: {Format a dcol for nice output}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -semigraphic -data $data  -nohead}\
+    -result "┌───┬─────────────────┬────────┐\n│ 1 │ current account │ 456.56 │\n│ 2 │ saving account  │  78.60 │\n│ 3 │ expense         │  56.00 │\n└───┴─────────────────┴────────┘\n"
+
+test dcol.format-5: {Format a dcol for nice output}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -semigraphic -nohead -fmt {%3s %-8s %-6s} -- $data}\
+    -result "┌─────┬──────────┬────────┐\n│   1 │ current➩ │ 456.56 │\n│   2 │ saving ➩ │ 78.6   │\n│   3 │ expense  │ 56     │\n└─────┴──────────┴────────┘\n"
+
+test dcol.format-6: {Format a dcol for nice output}\
+    -setup {set data [list N° {1 2 3} descr {{current account} {saving account} expense} period {456.56 78.6 56}]}\
+    -body {datatable dcol format -data $data -semigraphic -fmt {%3s %-8s %-6s}}\
+    -result "┌─────┬──────────┬────────┐\n│ N°  │ descr    │ period │\n├─────┼──────────┼────────┤\n│   1 │ current➩ │ 456.56 │\n│   2 │ saving ➩ │ 78.6   │\n│   3 │ expense  │ 56     │\n└─────┴──────────┴────────┘\n"
+
+
+puts "┌─────────────────────┐"
+puts "│ *** END OF TEST *** │"
+puts "└─────────────────────┘"

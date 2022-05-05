@@ -1,0 +1,309 @@
+# -*- coding: utf-8-unix; mode:org; mode: auto-fill; fill-column: 80; ispell-local-dictionary: "american"; -*-
+
+
+#+TITLE:  Developer Guide
+#+DATE:   Mai 2022
+#+AUTHOR: Mathieu Pouit
+#+LANG: en
+
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+STARTUP: inlineimages
+#+STARTUP: noindent
+
+
+
+* Introduction
+
+I will not detailed here all the code or repeat the comments that are already
+included. I just give some hints, to help accelerating the reading and the
+correct understanding. Before reading this file, you should have read the other
+files in this directory, the teaser and at list have an idea of the content of
+the user manual, so you may refer to it as needed during the reading.
+
+
+There are two modules contained in this directory:
+- ~datatable~: the main module, allowing in particular the formating of table
+- ~array2d~: a side module, more simple and linked to datatable for formating
+
+
+From a general perpective, the namespace [[table-1.0.tm][datatable]] is mainly composed of :
+
+- ~datatable::column~ : the sub-namespace for handling columns
+
+- ~datatable::line~   : the sub-namespace for handling lines
+
+- procedures at the top level of the namespace such as ~datatable::format~
+
+
+Some other sub-namespaces are developped for gathering functions based on the
+structure of argument they manipulate.
+
+- ~datatable::string~ : this sub-namespace is just a repository of few usefull
+  formatting string procedures (dates, euros etc). Namespace if just for clarity
+  but has not effect, since all those procedure are placed at upmost level (with
+  ~uplevel #0~). Indeed, I'm finally using only ~lshift~ from this set of procedure
+  to handle optional arguments in big procedures. On could replace it by
+  defining only this procedure. Now, I personnally like to have access to these
+  classical procedures, when loading the module ~datatable~.
+
+- ~datatable::list~ : procedure manipulating lists in the context of
+  datatable. Lists may be list of index or element of a datatable such as a
+  column or a line.
+
+- ~datatable::frame~ : contain the procedule ~datatable frame line~ and other
+  procedures for drawings frames arround the table in semigraphic mode.
+
+- ~datatable::ldict~ : namespace gathering procedures for lists of
+  dictionaries. Dictionaries are supposed to be the lines in the approach of
+  this module.
+
+- ~datatable::dcol~ : namespace gathering procedures for dictionaries of
+  columns. The columns contents are lists, which are the content of the
+  dictionaries and they keys of dictionaries are the column headers (or columns
+  titles).
+
+The teaser and the user manual are presenting the commands to transfer from
+~llist~ to ~ldict~ or ~dcol~.
+
+
+* Overview of the Namespaces content
+
+The package use a lot the namespaces to structure the codes and obtain finally
+an interface, which sounds easy to learn for the user.
+
+
+# datatable
+#     │
+#     ├── list : lists manipulation, most procedures brought at top level
+#     │    │ 
+#     │    ├── id2int     : convert list index into integer
+#     │    └── normalize  : fill a list with empties to fit a given length
+#     │
+#     ├── isnormalized    : check format of a datatable
+#     ├── normalize       : complete lines with empties if necessary
+#     ├── transpose       : return a transpose 
+#     ├── orient          : secure orientation per line or column
+#     ├── format          : datatable output with variuous formatting options
+#     │
+#     ├── column : accessing to columns as a block
+#     │     │
+#     │     ├── count      
+#     │     ├── insert
+#     │     ├── append
+#     │     ├── remove
+#     │     ├── index
+#     │     ├── width
+#     │     ├── fmt
+#     │     ├── overwrite
+#     │     └── cumul
+#     │
+#     ├── widths          : return the list of widths of columns
+#     ├── fmt             : return the list of formatting string for columns
+#     │
+#     ├── line : accessing to lines like for columns
+#     │     │
+#     │     ├── count
+#     │     ├── insert
+#     │     ├── append
+#     │     ├── remove
+#     │     ├── index
+#     │     ├── overwrite
+#     │     ├── sort
+#     │     ├── fmt
+#     │     └── format
+#     │
+#     │
+#     ├── ldict : list of dictionaries, each record is saved in a dictionary
+#     │     │
+#     │     ├── check
+#     │     ├── merge
+#     │     ├── format
+#     │     │
+#     │     ├── to
+#     │     │    └── dcol
+#     │     │    
+#     │     ├── headers
+#     │     │    │
+#     │     │    ├── list
+#     │     │    └── overwrite
+#     │     │    
+#     │     └── column
+#     │          │
+#     │          └── get
+#     │
+#     ├── dcol : dictionary of columns, keys are titels, values are columns
+#     │     │    content given as lists
+#     │     │
+#     │     ├── format
+#     │     │
+#     │     ├── merge        
+#     │     │
+#     │     ├── to
+#     │     │    └── ldict
+#     │     │    
+#     │     └── headers
+#     │          │
+#     │          └── list
+#     │
+#     ├── to : transfer of llist to other structures
+#     │    │
+#     │    ├── ldict 
+#     │    │
+#     │    └── dcol
+#     │
+#     ├── from : retrieve llist from other structures
+#     │    │
+#     │    ├── ldict 
+#     │    │
+#     │    └── dcol
+#     │
+#     └── frame : sets of internal procedure for layout
+#           │
+#           ├── line        : printing a line
+#           └── addHeaders
+#
+
+The other side module, which is very similar is array2d.
+
+
+# array2d
+#     │
+#     ├── declare : make sure a variable is declared as an array2d
+#     │
+#     ├── names   : similar to array names, retrieve here the indices
+#     │
+#     ├── lines : accessing the lines of the matrix
+#     │     │
+#     │     ├── names : retrieve the ordered list of names of the lines
+#     │     │
+#     │     └── length : length of the line (in number of columns)
+#     │
+#     ├── columns : accessing the columns of the matrix
+#     │     │
+#     │     ├── names : retrieve the ordered list of names of the columns
+#     │     │
+#     │     └── length : length of columns (in number of lines)
+#     │
+#     ├── 2llist : convert the matrix to a list of list (llist)
+#     │
+#     ├── 2ldict : convert the matrix to a list of dict (ldict)
+#     │
+#     └── format : formatting the matrix (using datatable module)
+#
+
+
+
+* The files
+
+The module is split over several files, organised according to the type of
+structure they are handling. The exceptions is ~datatable-1.0-format.tcl~ which is
+regrouping the ~format~ command for all cases.
+
+| [[./datatable-1.0.tm][datatable-1.0.tm]]         | the root file of the module                    |
+| [[./datatable-1.0-string.tcl][datatable.1.0-string.tcl]] | some strings procedures loaded with the module |
+| [[./datatable-1.0-frame.tcl][datatable-1.0-frame.tcl]]  | handling table output with frame lines         |
+| [[./datatable.1.0-list.tcl][datatable.1.0-list.tcl]]   | handling list in context of datatable          |
+| [[./datatable-1.0-llist.tcl][datatable-1.0-llist.tcl]]  | handling the llist                             |
+| [[./datatable-1.0-dlist.tcl][datatable-1.0-ldict.tcl]]  | handling ldict                                 |
+| [[./datatable-1.0-dcol.tcl][datatable-1.0-dcol.tcl]]   | handling dcol                                  |
+| [[./datatable-1.0-format.tcl][datatable-1.0-format.tcl]] | formatting procedures                          |
+| [[array2d-1.0.tm]]           | the side module array2d                        |
+
+The subdirectory [[test]] contains the test bunch for this module. The tests are
+testing the procedure files per files
+
+The subdirectory [[./doc][doc]] contains these help files.
+
+
+* The `datatable format` command
+
+The procedure ~format~ is defined in different context always with the same
+meaning of presenting the data in an organized manner. The file
+[[./datatable-1.0-format.tcl][database-1.0-format.tcl]] is dedicated to the definitions of all thoses variants.
+
+This command has many arguments, such as a list of columns formats. If this
+formatting list is not given, it is generated by using the command ~datatable
+list fmt~ on each column.
+
+The command recurses through each line to format them using the command ~datatable
+frame line~ which is in the file ~datatable-1.0-frame.tm~.  This command uses the
+commands ~STRICTSTRING~ or ~FIXEDSTRING~ according to the type of element in the
+string (numeric -> strict ; char -> fixed).
+
+The command ~datatable frame line~ has optional argument to precise the separation
+character in case of csv ouput or the possible end of line string. But to be
+quick (this procedure is called as many times as we have lines in the table),
+I've used a simplified approach based on ~lshift~ to read the ~args~. This low level
+procedure is defined in ~datatable list~.
+
+In case the command encounter an element which is part of the exceptions
+(meaning it is a string, which may be mixed in column of numerics such as NA,
+tbd or other similar), the numeric format is converted to string format with
+~FMT2STR~ so no error is raised.
+
+If the option ~-semigraphic~ is selected, a line frame is added at top and at the
+bottom.
+
+ 
+* Key element of the code explained
+
+I'm not describing in details the code. The code is already commented and
+otherwise self explanatory. This chapter just review some key points.
+
+
+** Optional arguments and lshift
+
+I have tried the use of [[https://github.com/RubyLane/parse_args][parse_args]] to manage the options of the command ~format~,
+but eventually I prefered to keep my own simple method, which is OK for the need
+here and don't require the user to learn this additional library.
+
+For this, I simply need the function ~lshift~, which is here defined in the file
+[[./datatable-1.0-list.tcl][datatable-1.0-list.tcl]], but put at the top level (#0).
+
+
+** handling columns and lines and use of `datatable orient`
+
+When handling lists of lists one can easily mixed up list of scolumns with list
+of lines. To capture and auto-correct possible simply entry errors, I'm applying
+the command ~datatable orient $dataset NbOf [columns/lines] toListType~ to the
+additional llist given as argument to the commands ~datatable column/line insert~,
+~datable column/line append~, ~datable column/Line overwrite~.
+
+This is based on the observation thant when adding lines to a table, their lengths
+must respect the number of columns of the table.
+
+                       xxxxxx          xxxxxx
+                       xxxxxx +      = xxxxxx
+                               xxxxxx  xxxxxx
+                               xxxxxx  xxxxxx
+ 
+When columns are added, their length must respect the number of lines of
+the table.
+
+                           xxxx   xx   xxxxxx
+                           xxxx + xx = xxxxxx
+                           xxxx   xx   xxxxxx
+
+The main argument is a llist and we know it is indeed a list of lines. We
+correct the second llist, in case it wouldn't had been presented in the proper
+way.
+
+                           xxxx                                  xxxx   xx
+                           xxxx + xxx  => WRONG! CORRECTED TO −> xxxx + xx
+                           xxxx   xxx                            xxxx   xx
+
+The rest of the procedure are loops on the llist.
+
+
+** Parsing options
+
+Only the uplevel procedure [[./datatable-1.0-format.tcl][datatable format]] has a real options parser. I used my
+own cooking for it.
+
+A possible alternative is to use this [[./datatable-1.0-format-with-parse_args.tm][another solution]] using the package
+[[https://github.com/RubyLane/parse_args][parse_args]], but you need to install it on your system and then do few code
+adapations. I tried also [[https://wiki.tcl-lang.org/page/argparse][argparse]], which is a single tcl file package to be
+added to your tcl libraries repository, but some further code adaptations would
+be required for it.
+
