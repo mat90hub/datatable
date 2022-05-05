@@ -1,0 +1,476 @@
+@c -*- coding: utf-8-unix; mode: texinfo; mode: auto-fill; ispell-local-dictionary: "american" -*-
+\input texinfo
+
+@c %**start of header (This is for running Texinfo on a region.)
+@setfilename datatable.info
+@documentlanguage en_US
+@documentencoding UTF-8
+
+@settitle The Tcl library datatable
+@c %**end of header (This is for running Texinfo on a region.)
+
+@paragraphindent 0
+
+@dircategory Programming
+@direntry
+* datatable: (datatable).             Tcl library datatable.
+@end direntry
+
+
+@set TITLE The Tcl library datatable
+
+@set xref-automatic-section-title
+
+@iftex
+@set DOCUMENT article
+@set CHAPTER chapter
+@set SECTION section
+@end iftex
+
+@ifinfo
+@set DOCUMENT Info file
+@set CHAPTER major node
+@set SECTION minor node
+@end ifinfo
+
+@ifhtml
+@set DOCUMENT Web page
+@set CHAPTER chapter
+@set SECTION section
+@end ifhtml
+
+
+@titlepage
+@title @value{TITLE}
+@page
+@vskip 0pt plus 1fill
+@insertcopying
+@end titlepage
+
+@ifnottex
+@node Top
+@top The Tcl library datatable
+
+@end ifnottex
+
+
+@c ----------------------------------------------------------------------------
+
+@chapter Purpose of this Tcl extension
+
+The module files shall be installed in your directories and loaded with
+commands similar as:
+
+@example
+::tcl::tm::path add [pwd]
+package require datatable
+@end example
+
+The commande @code{[pwd]} must be replaced by the directory, where the
+module is stored.
+
+
+The commande @code{ensemble} has been used in the module, so the
+repeated double points (@code{::}) can be forgotten.
+
+The approach taken in this module is that none of its commands modify
+its argument. If one wish to modify the set of data, one has to use the
+structure as shown below (here to add a column to an existing table).
+
+@example
+set data [datatable column append $data @{…@}]
+@end example
+
+I tried to use a wording and options that would sound familiar to a
+regulat Tcl programmer. The next chapter present the list of available
+commands in a subjective order of interest.
+
+
+
+@node Commands
+@chapter Commands
+
+@section datatable format $data ?opt? 
+
+Return a string giving datatable formatted with options. Be careful that the
+options come after the dataset to be formatted in contrary to usual practice
+with the regular @code{format} command.
+
+The options are:
+@multitable @columnfractions .3 .7
+@item @code{-data}
+@tab option to give the data (upfront of some options)
+
+@item @code{-semigraphic}
+@tab dataset is presented in semigraphic form. (exclude @code{-csv})
+
+@item @code{-csv}
+@tab dataset is presented with Caracter Separating Value (exclude
+@code{-semigraphic})
+
+@item @code{-fmt @{...@}}
+@tab the list of formatting string fore each columns
+
+@item @code{-sep ".."}
+@tab the separating character between values, default is @code{" "}
+
+@item @code{-eol ".."}
+@tab possible string to add at each end of line (typically @code{\\\\}
+for LaTeX table).
+
+@item @code{-except @{...@}} @code{-NA}
+@tab list of strings accepted in numeric formatting (useful for
+exceptions strings such as @code{'NA' '-' 'tbd'})
+
+@item @code{--}
+@tab end of options
+
+@end multitable
+
+
+Note that this function is repeated later for other namespaces context: @code{line},
+@code{ldict}, @code{dcol} with the same approach.
+                
+
+@section datatable frame addHeader tablestr titles
+
+It works only for table formatted in semigraphic. For others, a procedure is not
+needed (or not worth to develop, when comparing the simplicity to add a line of
+titels with possible separators compared to the complexity required to develop a
+procedure matching all cases).  
+
+This procedure @code{addHeaders} guess where are the separation lines are located and and
+integrate it in the list of titles to be added as columns headers.
+
+
+@section datatable line insert $data id
+
+return a datable with line(s) inserted.  Several lines can be inserted by giving
+a list of id instead of a single id and a llist instead of simple list.
+
+
+@section datatable column insert $data id
+
+return a datable with column(s) inserted at the position id. Several columns can
+be inserted by giving a list of id instead of a single id and a llist instead of
+simple list.
+
+
+@section datatable line append $data
+
+return a datatable with line(s) appended (same remark as for columns).
+
+
+@section datatable column append $data
+
+return a datatable with column(s) appended. Several columns can be appended by
+giving a llist insted of simple list.
+
+
+@section datatable line index $data id
+
+return line(s) given by their index (same remark as for columns).
+
+
+@section datatable column index $data id
+
+return column(s) given by their index. Several columns can be retrieved as a
+llist (in this case, it is always a list of lines) if we give a list of id
+instead of a single id.
+
+
+@section datatable column overwrite $data
+
+return a datable, which column(s) are overwriten. Several columns can
+be overwritten by giving a list of id instead of a single id and a llist instead of
+simple list.
+
+
+@section datatable column remove $data id
+
+return a datatable with column(s) removed. Several colums can be removed by
+giving a list of id instead of single id.
+
+
+@section datatable column cumul $data id
+
+return column giving cumulated figures. Several columns can be cumulated by
+giving a list of id insted of a single id.
+
+
+@section datatable line remove $data id
+
+return a datatable with line(s) removed (same remark as for columns).
+
+
+@section datatable line overwrite $data
+
+return a datable, which line(s) are overwriten (same remark as for columns)
+
+
+@section datatable line sort -index id ?opt? $data
+
+return a table with lines sorted.
+
+
+@section datatable column count $data
+
+return the number of columns
+
+
+@section datatable line count $data
+
+return the number of lines
+
+
+@section datable isnormalized $data
+
+check if data given are in the llist format expected by the module (all lines
+shall have the same number of columns).
+
+
+@section datatable normalize $data
+
+complete a llist with empties so all lines have the same number of columns.
+
+
+@section datatable transpose $data
+
+return a transposed datatable
+
+
+@section datatable list maxWidth data
+
+return the max width of all elements from a list
+
+
+@section datatable list fmt $data
+
+return a formatting string that would align all component of list if they are
+represented vertically.
+
+
+@section datatable fmt $data
+
+return a list of formatting strings, that would be the default for representing
+all the lines of a datatable (without cutting them).
+
+
+@section capitalize str
+
+return a string capitalize
+
+
+@section ymd2dmy datestr
+
+return a date formatted in DD/MM/YYYY from an input in YY-MM-DD
+
+
+@section dmy2ymd datestr
+
+return a date formatted in YY-MM-DD from an input in DD/MM/YYYY
+
+
+@section format€ str ?sep? ?dec?
+
+return decimal into a decimal with euro sign and change of decimal point to coma
+by default (French convention).
+
+
+@section unformat€ str ?sep? ?dec?
+
+return a decimal string from a string formated by the preceding command.
+
+
+@section add€ str1 str2
+
+return the addition of two string formatted in euros with preceding command.
+
+
+@section lshift list
+
+return the left member of a list and subtract it from the list given.
+
+
+@section rshift list
+
+return the right member of a list and subtract it from the list given.
+
+
+@section reverse $list
+
+return a list in the reverse order
+
+
+@section range max   ; range min max ;  range min max step
+
+return a list in arithmetic progression from min to max (exclusded) with
+possible step.
+
+
+@section lfilter var list expr
+
+filter a list based on expression (expr) using the variable called var.
+
+
+
+@chapter Motivations and conventions
+
+@section Conventions coming from database world
+
+Since I will sometimes refer to it, this chapter reclarifies the vocabulary
+commonly used for databases.
+
+|------------+--------------------------------------------------------------------|
+| database   | Databases are set of data gathered into tables (see below)         |
+|            | and manage by tools such as Postgresql, Sqlite, mySQL. The         |
+|            | Tcl package tdbc allows to extract data from those database in     |
+|            | a similar way for all those tools.                                 |
+|------------+--------------------------------------------------------------------|
+| table      | Sometimes called relation when refering to the underlying          |
+| (relation) | mathematical theory. A table is a set of data sharing the same     |
+|            | attributes.                                                        |
+|------------+--------------------------------------------------------------------|
+| attribute  | Each data of a table has different properties of different types.  |
+|            | When data are organised graphically into table, properties are     |
+|            | typically reminded as columns titles. Such properties are called   |
+|            | attributes in the world of database.                               |
+|------------+--------------------------------------------------------------------|
+| record     | A record is elementary set of of data gathering at most one one    |
+|            | value for each attributes defined on a table. When represented     |
+|            | graphically on a table, record would be each lines of a the table. |
+|------------+--------------------------------------------------------------------|
+| field      | When used in database context, the field is the value taken by     |
+|            | a record for a given attribute. In the graphical representation    |
+|            | a field is the intersection between a record and an attribute.     |
+|            | With vocabulary from Tcl world, a record is finally a list of      |
+|            | fields.                                                            |
+|------------+--------------------------------------------------------------------|
+| id         | Traditional the attribute, which is used to refer to each record   |
+|            | in a unique manner is called Id, for identification number (since  |
+|            | it is usually also an integer). It is not a mandatory attribute,   |
+|            | but it is very useful to access to record and finally very         |
+|            | commonly used.                                                     |
+|------------+--------------------------------------------------------------------|
+
+
+@section Convention coming from the spreadsheet world
+
+Datatable in spreadsheet may have several forms. To fix ideas, we considere that we
+can always come back to the same presentation, in which the records are presented on
+horizontal lines and the attributes are the columns titels. There are normally
+more records than attributes and it is more convenient to scroll a datatable
+vertically than horizontally.
+                                                                           
+|---------+---------------------------------------------------------------------|
+| headers | for column headers, the first line containing the attributes names. |
+|---------+---------------------------------------------------------------------|
+| titles  | idem as headers                                                     |
+|---------+---------------------------------------------------------------------|
+| row     | we sometimes used row for record, refering to this common layout.   |
+|---------+---------------------------------------------------------------------|
+| column  | the column is a list of fields for a given attribute.               |
+|---------+---------------------------------------------------------------------|
+| body    | the lines of records as opposed to the line of headers.             |
+|---------+---------------------------------------------------------------------|
+
+The datatable that we are discussing are the body of such table represented
+under a spreadsheet. The line of titles is excluded, since it is a list of
+characters string, while the data below can be other types. Keeping the
+line of titles would be agaisnt the rule of keeping one type of data per column.
+
+
+@section The need for common procedures
+                                                       
+Programs are taking different choices, when handling datatables. As
+example, the library @url{https://wiki.tcl-lang.org/page/TDBC, tdbc}
+retrieves tables as a List of dictionaries (each record is a dictionary)
+or a list of lists (each record is a list, gathered in an encompassing
+list of record). @url{http://www.gnuplot.info/, Gnuplot} (an independant
+program easy to re-use in Tcl for generating graphs) is expecting to get
+the different coordinates (x and y axis) as independant list of
+records. Passing from a table extracted by *tdbc* to *gnuplot* requires
+either several extraction of the coordinate one by one or loops to
+isolate some colums from an extracted table.
+
+After an extraction, one may also want to do minor treatment, such as individual
+data reformatting or simply display of the table. When working on tables with
+tcl, I noticed, I was constantly debugging the same kind of loops and I found,
+it could be useful to centralize their treatment in order to debug them once.
+
+
+@section Structure chosen to handle datatables under tcl
+
+Tcl is proposing structures for handling one dimension structures:
+@code{list}, @code{dict} or @code{arrays}. In some other languages
+arrays have multi-dimensional forms. Tcl choice was to let the user
+develop it.
+
+There are some tricks to simulate multidimensional array under tcl.
+(see as example the
+@url{https://wiki.tcl-lang.org/page/array, Tcler's page one array}.
+
+While arrays may be very practical for some cases, I have avoided to use
+them here since they are already high level components requiring
+particular attention when used as procedure argument as example (use of
+@code{upvar} required).
+
+Then the choices of structure to represent two dimension tables are still quite
+numerous under tcl:
+- list of lists (@code{llist})
+- list of dictionaries (@code{ldict})
+- dictionaries containing list (@code{dcol})
+- and some more ...
+
+tdbc is exporting table either as:
+- list of dictionaries (ldict): each record is dictionary and they are all
+  gathered into a list.
+- list of list (llist): each record is a list all regathered in an encompassing
+  list.
+
+The advantage of a ldict is that the name of attribute is clear for all
+fields. Disadvantage are the many repetitions occuring in the dataset
+exported. Tdbc chooses also to not export empty fields. But the exported
+set of data remains clear thanks to the attributes name.
+
+With the option '-as list' *tdbc* export the records as list instead of
+dictionaries. In this case, the empty fields are represented by empty members of
+the list, so the data remains consistent: one can deduct the attribute of a given
+field by its position in the list. This representation is avoiding repetition of
+the attributes names and is convenient for direct representation by a double
+loop on the llist.
+
+I have chosen to use the llist for internal representation of datatables and
+propose the conversion to the other structures. I could have called them list of
+lines, since I clearly keep the convention used when exporting with *tdbc* and the
+default graphical representation we have from such tables. But list of list
+(llist) is refering to a precise tcl structure and then it is preferable wording.   
+
+
+@chapter The pakage array2d
+
+@section What is it meant for ?
+
+This module provides the namespace arra2d to facilitate operation on 2D array
+It is stored in the directory of datatable, since it is using the procedure
+format of the datatable package (see the code for more details).
+
+Instead of being referered by a line number and a field (a column titel) as
+they are in a datatable, the elements of an array2d are referenced by a double
+indices.
+
+The indices are sepearated by comma, lines first, columns second:
+
+ tab(1,1)   tab(1,2)   tab(1,3)
+ tab(2,1)   tab(2,2)   tab(2,3)
+ tab(3,1)   tab(3,2)   tab(3,3)
+
+Apart from this order line,column this type of referencing is totally
+symetrical, as it is for a mathematical matrix. I used here the term array to
+remind of the internal structure, which shall be still visible (as for the use
+of the procudre names, to get the indices).
+
+There are gateways to datatable with the procedure 2llist or 2ldict and this
+allows then to re-use the procedure format developped in the datatable
+package.
+

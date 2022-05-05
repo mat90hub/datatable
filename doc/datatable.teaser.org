@@ -1,0 +1,413 @@
+# -*- coding: utf-8-unix; mode:org; mode: auto-fill; fill-column: 80; ispell-local-dictionary: "american"; -*-
+
+#+TITLE:  Tcl librairies for handling datatable
+#+DATE:   Mai 2022
+#+AUTHOR: Mathieu Pouit
+#+LANG: en
+
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+STARTUP: inlineimages
+#+STARTUP: indent
+
+
+* Table of content                                                      :TOC:
+- [[#what-is-this-package-meant-for-][What is this package meant for ?]]
+- [[#get-your-emacs-working-with-tcl][Get your Emacs working with Tcl]]
+- [[#teaser][Teaser]]
+  - [[#presenting-tables][Presenting tables]]
+  - [[#adding-headers-to-a-llist][Adding headers to a llist]]
+  - [[#convert-between-different-table-formats][Convert between different table formats]]
+  - [[#table-transposition][Table transposition]]
+
+* What is this package meant for ?
+
+This presentation pre-supposes the reader has some knowledge (and interest) in
+spreadcheets and databases and of course Tcl. *Database* or *spreadsheet* are
+handling tables of data and this package *datatable* is about managing such tables
+under Tcl.
+
+By default, Tcl is handling data structure of one dimension: *lists*, *dictionaries*
+or *arrays*. Handling a two dimensions structure such as a table, requires use of 
+recurrent double loops, quite errors prone, at least to my experience.
+
+This package implements those recurrent operations on tables to debug them once
+for all and gives access through an interface using common notions we have when
+working with tables. 
+
+It can be :
+- additing, deleting, overwriting colums or lines
+- formatting the table for getting nice output.
+
+The module is inspired by the module Pandas coming from the Python world and
+handling *dataframe* even if I do not pretend to compete with it. Functionalities
+are staying basic. The word '*frame'* has a paricular meaning in *Tcl/tk* world and
+to avoid confusion, I choose to call this package *datatable* instead.
+
+
+* Get your Emacs working with Tcl
+
+To fully benefit from this file, you must read it under Emacs with its Org mode
+and its babel extension. This allows to insert here some chunk of Tcl codes
+and get them executed directly in the text. If you have this configured correctly,
+you will be able to re-execute the example given below, do some minor changes in
+them and verify it is still working for you too.
+
+So having Emacs and Org mode is a preliminary here. This can be done quite
+smoothly now. Regarding Tcl code, it might not recognized by default. But there
+is a page for it [[https://orgmode.org/worg/org-contrib/babel/languages/ob-doc-tcl.html][here]].
+
+
+* Teaser
+
+** Presenting tables
+
+Few lines to show the interest of this module through practical examples. I
+suppose, I got a table, as example obtained with [[https://github.com/tcltk/tdbc][tdbc]] or whatever other
+operation. I simply keep it small here for the demo.
+
+Note: this presentation text is using the capabilities of the org-mode under
+Emacs to demonstration chunks of Tcl code that can be executed with the keys ~C-c
+C-c~ and give an immediate result within the text. This org file has just to be
+be on the same directory with this tested module, since I declare each time this
+directory as a directory, in which Tcl should look for modules.
+
+#+begin_src tcl :results result :exports both
+::tcl::tm::path add [pwd]
+package require datatable
+
+set data [list [list 1 bike green 500] [list 2 car red 1050] [list 3 roller blue 80]]
+
+datatable format -semigraphic $data
+#+end_src
+
+#+RESULTS:
+: ┌───┬────────┬───────┬──────┐
+: │ 1 │ bike   │ green │  500 │
+: │ 2 │ car    │ red   │ 1050 │
+: │ 3 │ roller │ blue  │   80 │
+: └───┴────────┴───────┴──────┘
+: 
+ 
+Other types of text formats are also possible such as:
+- csv format, ready to be imported into a spreadsheet,
+- LaTeX tables formatted lines,
+- or simple formatting.
+
+#+begin_src tcl :results output :exports both
+::tcl::tm::path add [pwd]
+package require datatable
+
+set data [list [list 1 bike green 500.2] [list 2 car red 1050] [list 3 roller blue 80.54]]
+
+puts "\nTable in standard csv:"
+puts "------------------------"
+puts [datatable format -sep , $data]
+
+puts "\nTable ready for inclusion in a LaTeX table:"
+puts "---------------------------------------------"
+puts [datatable format -sep & -eol \\\\ $data]
+
+puts "\nSimple table:"
+puts "-------------"
+puts [datatable format $data]
+#+end_src
+
+#+RESULTS:
+#+begin_example
+
+Table in standard csv:
+------------------------
+ 1 , bike   , green ,  500.20 
+ 2 , car    , red   , 1050.00 
+ 3 , roller , blue  ,   80.54 
+
+
+Table ready for inclusion in a LaTeX table:
+---------------------------------------------
+ 1 & bike   & green &  500.20  \\
+ 2 & car    & red   & 1050.00  \\
+ 3 & roller & blue  &   80.54  \\
+
+
+Simple table:
+-------------
+ 1  bike    green   500.20 
+ 2  car     red    1050.00 
+ 3  roller  blue     80.54 
+
+#+end_example
+
+
+Now, we can also handle columns: add, remove, insert ...
+So let's introduce a new column and see some of these functionalities.
+
+#+begin_src tcl :results output :exports both
+::tcl::tm::path add [pwd]
+package require datatable
+
+puts "\nThe orginal set of data is:"
+puts "---------------------------"
+set data [list [list 1 bike green 500] [list 2 car red 1050] [list 3 roller blue 80]]
+puts [datatable format $data]
+
+set newColumn [list sold available available]
+
+puts "\nAppend the new column:"
+puts "----------------------"
+set data [datatable column append $data $newColumn ]
+puts [datatable format $data]
+
+puts "\nRemove this last column:"
+puts "------------------------"
+set data [datatable column remove $data end]
+puts [datatable format $data]
+
+puts "\nRe-insert the new column upfront:"
+puts "----------------------"
+set data [datatable column insert $data 0 $newColumn]
+puts [datatable format $data]
+
+#+end_src
+
+#+RESULTS:
+#+begin_example
+
+The orginal set of data is:
+---------------------------
+ 1  bike    green   500 
+ 2  car     red    1050 
+ 3  roller  blue     80 
+
+
+Append the new column:
+----------------------
+ 1  bike    green   500  sold      
+ 2  car     red    1050  available 
+ 3  roller  blue     80  available 
+
+
+Remove this last column:
+------------------------
+ 1  bike    green   500 
+ 2  car     red    1050 
+ 3  roller  blue     80 
+
+
+Re-insert the new column upfront:
+----------------------
+ sold       1  bike    green   500 
+ available  2  car     red    1050 
+ available  3  roller  blue     80 
+
+#+end_example
+
+What is applicable for handling the element of list is here applied for the
+columns of a datatable. Normally such operations requires double loops. They are
+still present, but hidden in the backyard. This helps you keeping your code
+clear and simple.
+
+The same kind of commands exists for lines, even if one could do it also with
+simple Tcl instructions: the lines are accessible with simple loops in a list of
+lines.
+
+
+The structure in list of lines allow also to link with some operation already
+existing in Tck such as the command ~lsort -index~ which is sorting lines
+according criteria set an indexed column. To maintain the consistency in the
+logic of using ~datatable~, this ~lsort -index~ command has been renamed here
+~datatable line sort -index~.
+
+#+begin_src tcl :results output :exports both
+::tcl::tm::path add [pwd]
+package require datatable
+
+set data [list [list 1 bike green 500] [list 2 car red 1050] [list 3 roller blue 80]]
+
+puts "The original set of data:"
+puts "---------------------------"
+puts [datatable format $data]
+
+puts "Sort the lines by last columns as integer in increasing order:"
+puts "--------------------------------------------------------------"
+set data [datatable line sort -index end -increasing -integer $data]
+puts [datatable format $data]
+#+end_src
+
+#+RESULTS:
+#+begin_example
+The original set of data:
+---------------------------
+ 1  bike    green   500 
+ 2  car     red    1050 
+ 3  roller  blue     80 
+
+Sort the lines by last columns as integer in increasing order:
+--------------------------------------------------------------
+ 3  roller  blue     80 
+ 1  bike    green   500 
+ 2  car     red    1050 
+
+#+end_example
+
+
+** Adding headers to a llist
+
+When working with ~llist~, the addition of headers is normally occuring at the
+last moment. The user has to defined it specifically to the solution he is
+developping. For the format semigraphic there is a solution included, which is
+to add the header line on a formated table. In this case, the format of the
+header line can be deducted from the formatted table.
+
+#+begin_src tcl :results output :exports both
+::tcl::tm::path add [pwd]
+package require datatable
+
+set data [list [list 1 bike green 500.2]\
+	      [list 2 car red 1050]\
+	      [list 3 roller blue 80.54]]
+set headers [list index item color price]
+
+puts "The original set of data with headers:"
+puts "--------------------------------------"
+set table [datatable format -semigraphic $data]
+set table [datatable frame addHeader $table $headers]
+puts $table
+#+end_src
+
+#+RESULTS:
+#+begin_example
+The original set of data with headers:
+--------------------------------------
+┌───┬────────┬───────┬─────────┐
+│ ➩ │ item   │ color │ price   │
+├───┼────────┼───────┼─────────┤
+│ 1 │ bike   │ green │  500.20 │
+│ 2 │ car    │ red   │ 1050.00 │
+│ 3 │ roller │ blue  │   80.54 │
+└───┴────────┴───────┴─────────┘
+
+#+end_example
+
+
+** Convert between different table formats
+
+The module ~datatable~ represents table internally as list of lines, that we call
+here lists of lists or llist to underline the Tcl structure used. But other
+format are possible for table using Tcl dictionaries.
+
+|--------+-----------------------------------------+------------------------|
+| naming | description                             | file                   |
+|--------+-----------------------------------------+------------------------|
+| llist  | List of list, each line is a list       | datatable-1.0-llist.tm |
+|--------+-----------------------------------------+------------------------|
+| ldict  | list of dict, each line is a dictionary | datatable-1.0-ldict.tm |
+|--------+-----------------------------------------+------------------------|
+| dcol   | dictionary of columns                   | datatable-1.0-dcol.tm  |
+|--------+-----------------------------------------+------------------------|
+
+Dictionaries are introducing an additional information, which is the name for
+each type of data. In a table as proposed in ~datatable~, this corresponds to
+column headers. This type of formats implies many repetitions for large tables,
+reason why there are not the default format in ~datatable~. 
+
+There are six possibilities of conversions from or to llist with these other two
+format using dictionaries.
+
+|------------------+-------------------------+-------------------------|
+| conversion       | datatable command       | defined in file         |
+|------------------+-------------------------+-------------------------|
+| llist to ldict   | ~datatable to ldict~      | datatable-1.0.tm        |
+| llist from ldict | ~datatable from ldict~    | datatable-1.0.tm        |
+| llist to dcol    | ~datatable to dcol~       | datatable-1.0.tm        |
+| llist from dcol  | ~datatable from dcol~     | datatable-1.0.tm        |
+| ldict to dcol    | ~datatable ldict to dcol~ | datatable-1.0-ldict.tcl |
+| dcol to ldict    | ~datatable dcol to ldict~ | datatable-1.0-dcol      |
+|------------------+-------------------------+-------------------------|
+
+When one is converting a ~llist~ to a format using dictionaries, a list of headers
+must be added to the ~llist~ to fully control the conversion.
+
+#+begin_src tcl :results output :exports both
+::tcl::tm::path add [pwd]
+package require datatable
+
+set data [list [list 1 bike green 500.2]\
+	      [list 2 car red 1050]\
+	      [list 3 roller blue 80.54]]
+set headers [list index item color price]
+
+set dictCol [datatable to dcol $data $headers]
+
+puts "print the dictCol:"
+puts "--------------------------------------"
+set table [datatable dcol format -semigraphic $dictCol]
+puts $table
+#+end_src
+
+#+RESULTS:
+#+begin_example
+print the dictCol:
+--------------------------------------
+┌───┬────────┬───────┬─────────┐
+│ ➩ │ item   │ color │ price   │
+├───┼────────┼───────┼─────────┤
+│ 1 │ bike   │ green │  500.20 │
+│ 2 │ car    │ red   │ 1050.00 │
+│ 3 │ roller │ blue  │   80.54 │
+└───┴────────┴───────┴─────────┘
+
+#+end_example
+
+There can be particular advantage of this transfer, as example here to get the
+list of items available.
+
+#+begin_src tcl :results output :exports both
+::tcl::tm::path add [pwd]
+package require datatable
+
+set data [list [list 1 bike green 500.2]\
+	      [list 2 car red 1050]\
+	      [list 3 roller blue 80.54]]
+set headers [list index item color price]
+
+set dictCol [datatable to dcol $data $headers]
+
+puts -nonewline "items available:"
+set table [datatable line format -sep , -- [dict get $dictCol item]]
+puts $table
+#+end_src
+
+#+RESULTS:
+: items available: bike , car , roller 
+: 
+
+
+
+** Table transposition
+
+Finally there is are also transposition features, which completes this set of
+tables conversion commands.
+
+#+begin_src tcl :results output :exports both
+::tcl::tm::path add [pwd]
+package require datatable
+
+set data [list [list 1 bike green 500.2]\
+	      [list 2 car red 1050]\
+	      [list 3 roller blue 80.54]]
+
+set tdata [datatable transpose $data]
+
+puts [datatable format $tdata]
+#+end_src
+
+#+RESULTS:
+:  1      2     3      
+:  bike   car   roller 
+:  green  red   blue   
+:  500.2  1050  80.54  
+: 
+
+
+

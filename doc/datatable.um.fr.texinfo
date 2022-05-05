@@ -1,0 +1,61 @@
+@c -*- coding: utf-8-unix; mode: texinfo; mode: auto-fill; ispell-local-dictionary: "french" -*-
+@c typographie française :    «   » … ’
+\input texinfo
+
+@c %**start of header (This is for running Texinfo on a region.)
+@setfilename datatable.fr.info
+@documentlanguage fr_FR
+@documentencoding UTF-8
+
+@settitle L'extension Tcl datatable
+@c %**end of header (This is for running Texinfo on a region.)
+
+@paragraphindent 0
+
+@dircategory Programming
+@direntry
+* datatable: (datatable.fr).            L'extension Tcl datatable.
+@end direntry
+
+
+@set TITLE L'extension Tcl datatable
+
+@set xref-automatic-section-title
+
+@iftex
+@set DOCUMENT article
+@set CHAPTER chapter
+@set SECTION section
+@end iftex
+
+@ifinfo
+@set DOCUMENT Info file
+@set CHAPTER major node
+@set SECTION minor node
+@end ifinfo
+
+@ifhtml
+@set DOCUMENT Web page
+@set CHAPTER chapter
+@set SECTION section
+@end ifhtml
+
+
+@titlepage
+@title @value{TITLE}
+@page
+@vskip 0pt plus 1fill
+@insertcopying
+@end titlepage
+
+@ifnottex
+@node Top
+@top L'extension Tcl datatable
+
+@end ifnottex
+
+
+@c ----------------------------------------------------------------------------
+
+
+

@@ -1,0 +1,7 @@
+#-*- mode: text; coding: utf-8-unix; fill-column: 80; -*-
+
+Directory for testing file of the libraries
+
+Simply launch:
+
+tclsh all.tcl
