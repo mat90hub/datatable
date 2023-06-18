@@ -31,6 +31,7 @@
 package provide array2d 1.0
 
 package require datatable::datatable 1.0
+
 # used for format command (see at the end)
 
 namespace eval array2d {

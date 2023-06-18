@@ -142,6 +142,7 @@ namespace eval datatable::line {
     #  -NA            (useful for exceptions strings such as 'NA' '-' 'tbd')
     #
     # The sign -- marks the end of options.
+    #
     # --------------------------------------------------------------------------
     proc format args {
 	set STR "csv"

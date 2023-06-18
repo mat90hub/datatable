@@ -9,7 +9,7 @@
 #+STARTUP: hidestars
 #+STARTUP: inlineimages
 #+STARTUP: indent
-
+#+PROPERTY: :var org-babel-tcl-command=tclsh
 
 * Table of content                                                      :TOC:
 - [[#what-is-this-package-meant-for-][What is this package meant for ?]]
@@ -29,7 +29,7 @@ under Tcl.
 
 By default, Tcl is handling data structure of one dimension: *lists*, *dictionaries*
 or *arrays*. Handling a two dimensions structure such as a table, requires use of 
-recurrent double loops, quite errors prone, at least to my experience.
+recurrent double loops, quite errors prone, at least from my experience.
 
 This package implements those recurrent operations on tables to debug them once
 for all and gives access through an interface using common notions we have when
@@ -72,12 +72,12 @@ C-c~ and give an immediate result within the text. This org file has just to be
 be on the same directory with this tested module, since I declare each time this
 directory as a directory, in which Tcl should look for modules.
 
-#+begin_src tcl :results result :exports both
-::tcl::tm::path add [pwd]
+
+#+begin_src tcl :results value :exports both
+::tcl::tm::path add [file dirname [pwd]]
 package require datatable
 
 set data [list [list 1 bike green 500] [list 2 car red 1050] [list 3 roller blue 80]]
-
 datatable format -semigraphic $data
 #+end_src
 
@@ -88,6 +88,7 @@ datatable format -semigraphic $data
 : │ 3 │ roller │ blue  │   80 │
 : └───┴────────┴───────┴──────┘
 : 
+
  
 Other types of text formats are also possible such as:
 - csv format, ready to be imported into a spreadsheet,
@@ -95,7 +96,7 @@ Other types of text formats are also possible such as:
 - or simple formatting.
 
 #+begin_src tcl :results output :exports both
-::tcl::tm::path add [pwd]
+::tcl::tm::path add [file dirname [pwd]]
 package require datatable
 
 set data [list [list 1 bike green 500.2] [list 2 car red 1050] [list 3 roller blue 80.54]]
@@ -143,7 +144,7 @@ Now, we can also handle columns: add, remove, insert ...
 So let's introduce a new column and see some of these functionalities.
 
 #+begin_src tcl :results output :exports both
-::tcl::tm::path add [pwd]
+::tcl::tm::path add [file dirname [pwd]]
 package require datatable
 
 puts "\nThe orginal set of data is:"
@@ -202,6 +203,7 @@ Re-insert the new column upfront:
 
 #+end_example
 
+
 What is applicable for handling the element of list is here applied for the
 columns of a datatable. Normally such operations requires double loops. They are
 still present, but hidden in the backyard. This helps you keeping your code
@@ -219,7 +221,7 @@ logic of using ~datatable~, this ~lsort -index~ command has been renamed here
 ~datatable line sort -index~.
 
 #+begin_src tcl :results output :exports both
-::tcl::tm::path add [pwd]
+::tcl::tm::path add [file dirname [pwd]]
 package require datatable
 
 set data [list [list 1 bike green 500] [list 2 car red 1050] [list 3 roller blue 80]]
@@ -251,6 +253,7 @@ Sort the lines by last columns as integer in increasing order:
 #+end_example
 
 
+
 ** Adding headers to a llist
 
 When working with ~llist~, the addition of headers is normally occuring at the
@@ -260,7 +263,7 @@ to add the header line on a formated table. In this case, the format of the
 header line can be deducted from the formatted table.
 
 #+begin_src tcl :results output :exports both
-::tcl::tm::path add [pwd]
+::tcl::tm::path add [file dirname [pwd]]
 package require datatable
 
 set data [list [list 1 bike green 500.2]\
@@ -329,7 +332,7 @@ When one is converting a ~llist~ to a format using dictionaries, a list of heade
 must be added to the ~llist~ to fully control the conversion.
 
 #+begin_src tcl :results output :exports both
-::tcl::tm::path add [pwd]
+::tcl::tm::path add [file dirname [pwd]]
 package require datatable
 
 set data [list [list 1 bike green 500.2]\
@@ -363,7 +366,7 @@ There can be particular advantage of this transfer, as example here to get the
 list of items available.
 
 #+begin_src tcl :results output :exports both
-::tcl::tm::path add [pwd]
+::tcl::tm::path add [file dirname [pwd]]
 package require datatable
 
 set data [list [list 1 bike green 500.2]\
@@ -390,7 +393,7 @@ Finally there is are also transposition features, which completes this set of
 tables conversion commands.
 
 #+begin_src tcl :results output :exports both
-::tcl::tm::path add [pwd]
+::tcl::tm::path add [file dirname [pwd]]
 package require datatable
 
 set data [list [list 1 bike green 500.2]\
@@ -408,6 +411,5 @@ puts [datatable format $tdata]
 :  green  red   blue   
 :  500.2  1050  80.54  
 : 
-
 
 

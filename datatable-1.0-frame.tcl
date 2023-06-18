@@ -164,6 +164,8 @@ namespace eval frame {
 	    if [string is double -strict $E] {		
 		append LN " [STRICTSTRING $F $E] $SEP"
 	    } {
+		# we need to escape the character used for SEP if in the text
+		# set E [string map "$SEP \\\\$SEP" $E]
 		append LN " [FIXEDSTRING [FMT2STR $F] $E] $SEP"
 	    }
 	}

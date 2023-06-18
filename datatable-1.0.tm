@@ -6,6 +6,8 @@
 #╚═══════════════════════════╝
 
 #
+# license GPL 3.0
+#
 # Copyright (c) 
 # 
 
@@ -19,10 +21,6 @@ if {[string length [set SCRIPT [info script]]] > 0} {
 } {
     set tabDir [pwd]
 }
-
-
-# for log message
-package require log
 
 
 namespace eval datatable {
